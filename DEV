@@ -1,0 +1,279 @@
+from pyfmpcloud import settings
+from pyfmpcloud import company_valuation as cv
+from pyfmpcloud import stock_time_series as sts
+import pandas as pd
+import numpy as np
+from pandas_datareader import data as wb
+import matplotlib.pyplot as plt
+import requests
+import datetime
+import pandas_datareader.data as web
+
+settings.set_apikey('ad046886b77603ac40ad4f29b87ade87')
+settings.get_apikey()
+settings.get_urlroot()
+settings.get_urlrootfmp()
+
+balance = cv.balance_sheet('AAPL', period = 'annual', ftype = 'full')
+income = cv.income_statement('AAPL', period = 'annual', ftype = 'full')
+financial_ratio = cv.financial_ratios('AAPL', period = 'annual', ttm = False)
+cash_flow = cv.cash_flow_statement('AAPL', period = 'annual', ftype = 'full')
+company_profile = sts.company_profile('AAPL')
+enterprise_value = cv.enterprise_value('AAPL', period = 'annual')
+
+
+work_table = pd.concat((income[['fillingDate', 'revenue', 'operatingIncome', 'netIncome', 'eps']].replace(np.nan, 0)[0:10], balance[['totalAssets', 'totalLiabilities', 'totalStockholdersEquity']].replace(np.nan, 0)[0:10]
+                    ,financial_ratio[['dividendPayoutRatio', 'dividendYield']].replace(np.nan, 0)[0:10],cash_flow[['freeCashFlow', 'dividendsPaid']].replace(np.nan, 0)[0:10], enterprise_value['numberOfShares'].replace(np.nan, 0)[0:10]  ),
+                       axis = 1)
+
+
+company_profile_beta = company_profile['profile']['beta']
+
+
+Total_rating = []
+
+print(work_table)
+
+# считаем рост выручки_____________________________________________________________________
+
+growth_for_the_period = work_table['dividendPayoutRatio'][0]/work_table['dividendPayoutRatio'][7]
+percent_calculation = growth_for_the_period ** 0.1
+revenue_growth = round((percent_calculation -1), 2)
+
+print(f'revenue_growth {revenue_growth}%')
+
+
+if revenue_growth < 0.02:
+    revenue_growth_rating = 1
+elif 0.05 < revenue_growth > 0.02:
+    revenue_growth_rating = 0
+else:
+    revenue_growth_rating = -1
+
+Total_rating.append(revenue_growth_rating)
+
+# считаем Использование прибыли______________________________________________________________
+average_dividend_payout_percentage = np.mean(work_table['dividendYield'][0:])
+
+# average_percentage_of_buyback  # не найден   !!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+SHAREHOLDERS_EQUITY = (work_table['totalAssets'] - work_table['totalLiabilities'])
+
+growth_for_the_period_SHAREHOLDERS_EQUITY = SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]
+percent_calculation_SHAREHOLDERS_EQUITY = growth_for_the_period_SHAREHOLDERS_EQUITY ** 0.1
+average_quity_SHAREHOLDERS_EQUITY = round((percent_calculation_SHAREHOLDERS_EQUITY -1), 2)
+
+use_of_profit = round((average_dividend_payout_percentage + average_quity_SHAREHOLDERS_EQUITY), 2)
+
+print(f'use_of_profit {use_of_profit}%')
+
+if use_of_profit < 0.06:
+    use_of_profit_rating = -2
+elif 0.1 < use_of_profit > 0.06:
+    use_of_profit_rating = 0
+else:
+    use_of_profit_rating = 2
+
+Total_rating.append(use_of_profit_rating)
+
+# Считаем Операционную маржу_________________________________________________________________
+
+OPERATING_MAR = work_table['operatingIncome']/work_table['revenue']
+
+operating_margin = round(np.mean(OPERATING_MAR[0:]), 2)
+
+print(f'operating_margin {operating_margin}%')
+
+if use_of_profit < 0.06:
+    use_of_profit_rating = -2
+elif 0.14 < use_of_profit > 0.06:
+    use_of_profit_rating = 0
+else:
+    use_of_profit_rating = 2
+
+Total_rating.append(use_of_profit_rating)
+
+# Считаем Динамику операционной маржи_________________________________________________________________
+
+if OPERATING_MAR.std() < 0.1:
+    operating_margin_dynamics = 'Рост'
+    operating_margin_dynamics_rating = 2
+else:
+    operating_margin_dynamics = 'Падение'
+    operating_margin_dynamics_rating = -2
+
+Total_rating.append(operating_margin_dynamics_rating)
+
+print(f'operating_margin_dynamics {operating_margin_dynamics}')
+
+# Считаем Маржу чистой прибыли_________________________________________________________________
+
+NET_PROFIT_MAR = work_table['netIncome']/work_table['revenue']
+
+net_profit_margin = round(np.mean(NET_PROFIT_MAR[0:]), 2)
+
+print(f'net_profit_margin {net_profit_margin}%')
+
+if net_profit_margin < 0.06:
+    net_profit_margin_rating = -2
+elif 0.1 < net_profit_margin > 0.06:
+    net_profit_margin_rating = 0
+else:
+    net_profit_margin_rating = 2
+
+Total_rating.append(net_profit_margin_rating)
+
+# Считаем Динамику маржи чистой прибыли_________________________________________________________________
+
+if NET_PROFIT_MAR.std() < 0.1 :
+    net_profit_margin_dynamics = 'Рост'
+    net_profit_margin_dynamics_rating = 1
+else:
+    net_profit_margin_dynamics = 'Падение'
+    net_profit_margin_dynamics_rating = -1
+
+Total_rating.append(net_profit_margin_dynamics_rating)
+
+print(f'net_profit_margin_dynamics {net_profit_margin_dynamics}')
+
+# Считаем Рост EPS_________________________________________________________________
+EPS_GROW = work_table['eps'][0]/work_table['eps'][9]
+
+percent_calculation_EPS = EPS_GROW ** 0.1
+EPS_growth = round((percent_calculation_SHAREHOLDERS_EQUITY -1), 2)
+
+print(f'EPS_growth {EPS_growth}%')
+
+if EPS_growth < 0.06:
+    EPS_growth_rating = -2
+elif 0.01 < EPS_growth > 0.06:
+    EPS_growth_rating = 0
+else:
+    EPS_growth_rating = 2
+
+Total_rating.append(EPS_growth_rating)
+
+# Считаем Уровень долга_________________________________________________________________
+
+DEBT_LVL = work_table['totalLiabilities']/work_table['totalAssets']
+
+debt_level = round(np.mean(DEBT_LVL[0:]), 2)
+
+print(f'debt_level {debt_level}%')
+
+if debt_level < 0.5:
+    debt_level_rating = 1
+elif 0.7 < debt_level > 0.5:
+    debt_level_rating = 0
+else:
+    debt_level_rating = -1
+
+Total_rating.append(debt_level_rating)
+
+# Считаем ROE_________________________________________________________________
+
+Profitability = work_table['netIncome']/work_table['revenue']
+TechnicalEfficiency = work_table['revenue']/work_table['totalAssets']
+FinancialStructure = work_table['totalAssets']/work_table['totalStockholdersEquity']
+
+ROE = Profitability * TechnicalEfficiency * FinancialStructure
+
+ROE_average = round(np.mean(ROE[0:]), 2)
+
+print(f'ROE_average {ROE_average}%')
+
+if ROE_average < 0.08:
+    ROE_average_rating = -2
+elif 0.14 < ROE_average > 0.08:
+    ROE_average_rating = 0
+else:
+    ROE_average_rating = 2
+
+Total_rating.append(ROE_average_rating)
+
+# Считаем ROA_________________________________________________________________
+
+ROA_YEAR = work_table['netIncome']/work_table['totalAssets']
+
+ROA_average = round(np.mean(ROA_YEAR[0:]), 2)
+
+print(f'ROA_average {ROA_average}%')
+
+if ROA_average < 0.06:
+    ROA_average_rating = -1
+elif 0.08 < ROA_average > 0.06:
+    ROA_average_rating = 0
+else:
+    ROA_average_rating = 1
+
+Total_rating.append(ROA_average_rating)
+
+# Получаем общую оценку_________________________________________________________________
+
+print(Total_rating)
+print(f'Общая оценка = {sum(Total_rating)}')
+
+# ++++++++++++++++++++++++++++++++++  Оцениваем истинную стоимость  +++++++++++++++++++++++++++++++++++++++
+
+def valuecompany(quote):
+    Dtoday =   work_table['dividendsPaid'][0] / work_table['numberOfShares'][0]
+
+    # ROE and PAyout Ratio
+
+    ROE_formul = ROE_average
+    print(f'ROE_formul {ROE_formul}')
+
+    payout_ratio = work_table['dividendPayoutRatio'][0]
+    sustgrwothrate = ROE_formul * (1 - payout_ratio)
+
+    ##Cost of equity:
+    # Risk Free Rate
+    start = datetime.datetime(2019, 2, 1)
+    end = datetime.datetime(2020, 2, 27)
+
+    Treasury = web.DataReader(['TB1YR'], 'fred', start, end)
+    RF = float(Treasury.iloc[-1])
+    RF = RF / 100
+    print(f'RF {RF}')
+
+    # Beta
+    beta = float(company_profile_beta)
+    print(f'beta {beta}')
+
+    # Market Return
+    # Считаем годовую доходность
+    data = wb.DataReader('^GSPC', data_source='yahoo', start='2001-1-1') # нужно определиться с переменной
+    data['simple_return'] = (data['Adj Close'] / data['Adj Close'].shift(1)) - 1
+    data['simple_return'].replace(np.nan, 0)
+    avg_returns_a = data['simple_return'].mean() * 250
+
+    print(f'Годовая доходность {avg_returns_a}')
+
+    # Drop all Not a number values using drop method.
+    ke = RF + (beta * (avg_returns_a - RF))
+
+    DDM = (Dtoday * (1 + sustgrwothrate)) / (ke - sustgrwothrate)
+
+    print(f'DDM {DDM}')
+    return DDM
+
+
+valuecompany('AAPL')
+
+
+
+# _______ записываем в эксель
+# df = pd.DataFrame(balance)
+# df.to_excel('balance.xlsx')
+#
+# df = pd.DataFrame(income)
+# df.to_excel('income.xlsx')
+
+
+# https://github.com/razorhash/pyfmpcloud
+
+# https://apicenter.morningstar.com/login
+
