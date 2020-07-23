@@ -4,10 +4,10 @@ from pyfmpcloud import stock_time_series as sts
 import pandas as pd
 import numpy as np
 from pandas_datareader import data as wb
-import matplotlib.pyplot as plt
-import requests
 import datetime
-import pandas_datareader.data as web
+
+
+start_time = datetime.datetime.now() # Замер времени выполнения скрипта для одного тикера
 
 settings.set_apikey('ad046886b77603ac40ad4f29b87ade87')
 settings.get_apikey()
@@ -21,14 +21,11 @@ cash_flow = cv.cash_flow_statement('AAPL', period = 'annual', ftype = 'full')
 company_profile = sts.company_profile('AAPL')
 enterprise_value = cv.enterprise_value('AAPL', period = 'annual')
 
-
 work_table = pd.concat((income[['fillingDate', 'revenue', 'operatingIncome', 'netIncome', 'eps']].replace(np.nan, 0)[0:10], balance[['totalAssets', 'totalLiabilities', 'totalStockholdersEquity']].replace(np.nan, 0)[0:10]
                     ,financial_ratio[['dividendPayoutRatio', 'dividendYield']].replace(np.nan, 0)[0:10],cash_flow[['freeCashFlow', 'dividendsPaid']].replace(np.nan, 0)[0:10], enterprise_value['numberOfShares'].replace(np.nan, 0)[0:10]  ),
                        axis = 1)
 
-
 company_profile_beta = company_profile['profile']['beta']
-
 
 Total_rating = []
 
@@ -36,11 +33,9 @@ print(work_table)
 
 # считаем рост выручки_____________________________________________________________________
 
-growth_for_the_period = work_table['dividendPayoutRatio'][0]/work_table['dividendPayoutRatio'][7]
-percent_calculation = growth_for_the_period ** 0.1
-revenue_growth = round((percent_calculation -1), 2)
+revenue_growth = round((((work_table['revenue'][0]/work_table['revenue'][9]) ** 0.1) -1), 2)
 
-print(f'revenue_growth {revenue_growth}%')
+print(f'revenue_growth {revenue_growth}')
 
 
 if revenue_growth < 0.02:
@@ -62,13 +57,13 @@ average_dividend_payout_percentage = np.mean(work_table['dividendYield'][0:])
 
 SHAREHOLDERS_EQUITY = (work_table['totalAssets'] - work_table['totalLiabilities'])
 
-growth_for_the_period_SHAREHOLDERS_EQUITY = SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]
-percent_calculation_SHAREHOLDERS_EQUITY = growth_for_the_period_SHAREHOLDERS_EQUITY ** 0.1
-average_quity_SHAREHOLDERS_EQUITY = round((percent_calculation_SHAREHOLDERS_EQUITY -1), 2)
+round((((work_table['revenue'][0]/work_table['revenue'][9]) ** 0.1) -1), 2)
+
+average_quity_SHAREHOLDERS_EQUITY = round((((SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]) ** 0.1) -1), 2)
 
 use_of_profit = round((average_dividend_payout_percentage + average_quity_SHAREHOLDERS_EQUITY), 2)
 
-print(f'use_of_profit {use_of_profit}%')
+print(f'use_of_profit {use_of_profit}')
 
 if use_of_profit < 0.06:
     use_of_profit_rating = -2
@@ -85,16 +80,16 @@ OPERATING_MAR = work_table['operatingIncome']/work_table['revenue']
 
 operating_margin = round(np.mean(OPERATING_MAR[0:]), 2)
 
-print(f'operating_margin {operating_margin}%')
+print(f'operating_margin {operating_margin}')
 
-if use_of_profit < 0.06:
-    use_of_profit_rating = -2
-elif 0.14 < use_of_profit > 0.06:
-    use_of_profit_rating = 0
+if operating_margin < 0.06:
+    operating_margin_rating = -2
+elif 0.14 < operating_margin > 0.06:
+    operating_margin_rating = 0
 else:
-    use_of_profit_rating = 2
+    operating_margin_rating = 2
 
-Total_rating.append(use_of_profit_rating)
+Total_rating.append(operating_margin_rating)
 
 # Считаем Динамику операционной маржи_________________________________________________________________
 
@@ -115,7 +110,7 @@ NET_PROFIT_MAR = work_table['netIncome']/work_table['revenue']
 
 net_profit_margin = round(np.mean(NET_PROFIT_MAR[0:]), 2)
 
-print(f'net_profit_margin {net_profit_margin}%')
+print(f'net_profit_margin {net_profit_margin}')
 
 if net_profit_margin < 0.06:
     net_profit_margin_rating = -2
@@ -140,12 +135,14 @@ Total_rating.append(net_profit_margin_dynamics_rating)
 print(f'net_profit_margin_dynamics {net_profit_margin_dynamics}')
 
 # Считаем Рост EPS_________________________________________________________________
-EPS_GROW = work_table['eps'][0]/work_table['eps'][9]
 
-percent_calculation_EPS = EPS_GROW ** 0.1
-EPS_growth = round((percent_calculation_SHAREHOLDERS_EQUITY -1), 2)
+EPS_growth = round((((work_table['eps'][0]/work_table['eps'][9]) ** 0.1) -1), 2)   # Первый вариант, eps - берем из API
 
-print(f'EPS_growth {EPS_growth}%')
+EPS_growth = round((((SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]) ** 0.1) -1), 2)  # Второй вариант, eps = totalAssets - totalLiabilities
+
+#  !!!!!!!!!!!!!!!!!При разных вариантах разные значения!!!!!!!!!!!!!!!!!!!!!!
+
+print(f'EPS_growth {EPS_growth}')
 
 if EPS_growth < 0.06:
     EPS_growth_rating = -2
@@ -158,11 +155,9 @@ Total_rating.append(EPS_growth_rating)
 
 # Считаем Уровень долга_________________________________________________________________
 
-DEBT_LVL = work_table['totalLiabilities']/work_table['totalAssets']
+debt_level = round(np.mean(work_table['totalLiabilities']/work_table['totalAssets']), 2)
 
-debt_level = round(np.mean(DEBT_LVL[0:]), 2)
-
-print(f'debt_level {debt_level}%')
+print(f'debt_level {debt_level}')
 
 if debt_level < 0.5:
     debt_level_rating = 1
@@ -175,15 +170,10 @@ Total_rating.append(debt_level_rating)
 
 # Считаем ROE_________________________________________________________________
 
-Profitability = work_table['netIncome']/work_table['revenue']
-TechnicalEfficiency = work_table['revenue']/work_table['totalAssets']
-FinancialStructure = work_table['totalAssets']/work_table['totalStockholdersEquity']
+ROE_average = round(np.mean((work_table['netIncome']/work_table['revenue']) * (work_table['revenue']/work_table['totalAssets']) * \
+      (work_table['totalAssets']/work_table['totalStockholdersEquity'])), 2)
 
-ROE = Profitability * TechnicalEfficiency * FinancialStructure
-
-ROE_average = round(np.mean(ROE[0:]), 2)
-
-print(f'ROE_average {ROE_average}%')
+print(f'ROE_average {ROE_average}')
 
 if ROE_average < 0.08:
     ROE_average_rating = -2
@@ -196,11 +186,9 @@ Total_rating.append(ROE_average_rating)
 
 # Считаем ROA_________________________________________________________________
 
-ROA_YEAR = work_table['netIncome']/work_table['totalAssets']
+ROA_average = round(np.mean(work_table['netIncome']/work_table['totalAssets']), 2)
 
-ROA_average = round(np.mean(ROA_YEAR[0:]), 2)
-
-print(f'ROA_average {ROA_average}%')
+print(f'ROA_average {ROA_average}')
 
 if ROA_average < 0.06:
     ROA_average_rating = -1
@@ -234,7 +222,7 @@ def valuecompany(quote):
     start = datetime.datetime(2019, 2, 1)
     end = datetime.datetime(2020, 2, 27)
 
-    Treasury = web.DataReader(['TB1YR'], 'fred', start, end)
+    Treasury = wb.DataReader(['TB1YR'], 'fred', start, end)
     RF = float(Treasury.iloc[-1])
     RF = RF / 100
     print(f'RF {RF}')
@@ -260,9 +248,9 @@ def valuecompany(quote):
     print(f'DDM {DDM}')
     return DDM
 
-
 valuecompany('AAPL')
 
+print(f'Время выполнения :{datetime.datetime.now() - start_time}') # Замер времени
 
 
 # _______ записываем в эксель
@@ -272,8 +260,6 @@ valuecompany('AAPL')
 # df = pd.DataFrame(income)
 # df.to_excel('income.xlsx')
 
-
 # https://github.com/razorhash/pyfmpcloud
 
-# https://apicenter.morningstar.com/login
 
