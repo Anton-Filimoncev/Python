@@ -13,7 +13,7 @@ from scipy.stats.mstats import gmean
 start_time = datetime.datetime.now() # Замер времени выполнения скрипта для одного тикера
 
 
-company = 'TSLA'
+company = 'MSFT'
 
 settings.set_apikey('ad046886b77603ac40ad4f29b87ade87')
 settings.get_apikey()
@@ -30,16 +30,20 @@ real_time_quote = sts.real_time_quote(f'{company}')
 
 
 work_table = pd.concat((income[['fillingDate', 'revenue', 'operatingIncome', 'netIncome', 'eps', 'ebitda', 'depreciationAndAmortization', 'interestExpense']].replace(np.nan, 0)[0:10], balance[['totalAssets', 'totalLiabilities', 'totalStockholdersEquity', 'totalDebt']].replace(np.nan, 0)[0:10]
-                    ,financial_ratio[['dividendPayoutRatio', 'dividendYield', 'effectiveTaxRate']].replace(np.nan, 0)[0:10],cash_flow[['freeCashFlow', 'dividendsPaid']].replace(np.nan, 0)[0:10], enterprise_value[['numberOfShares', 'stockPrice']].replace(np.nan, 0)[0:10], real_time_quote['price']  ),
+                    ,financial_ratio[['dividendPayoutRatio', 'dividendYield', 'effectiveTaxRate']].replace(np.nan, 0)[0:10],cash_flow[['freeCashFlow', 'dividendsPaid']].replace(np.nan, 0)[0:10], enterprise_value[['numberOfShares', 'stockPrice']].replace(np.nan, 0)[0:10] ),
                        axis = 1)
 
-LTGrowth = 0.01
+LTGrowth = 0.02
+PRICE = real_time_quote['price'][0]
 
 company_profile_beta = company_profile['profile']['beta']
 
 Total_rating = []
 
 print(work_table)
+
+
+print('Расчет показателей качества')
 
 # считаем рост выручки_____________________________________________________________________
 
@@ -48,9 +52,9 @@ revenue_growth = round((((work_table['revenue'][0]/work_table['revenue'][9]) ** 
 print(f'revenue_growth {revenue_growth}')
 
 
-if revenue_growth < 0.02:
+if revenue_growth > 0.06:
     revenue_growth_rating = 1
-elif 0.05 < revenue_growth > 0.02:
+elif 0.05 > revenue_growth > 0.02:
     revenue_growth_rating = 0
 else:
     revenue_growth_rating = -1
@@ -67,7 +71,7 @@ average_dividend_payout_percentage = np.mean(work_table['dividendYield'][0:])
 
 SHAREHOLDERS_EQUITY = (work_table['totalAssets'] - work_table['totalLiabilities'])
 
-round((((work_table['revenue'][0]/work_table['revenue'][9]) ** 0.1) -1), 2)
+round((((work_table['revenue'][0]/work_table['revenue'][9]) ** 0.1) -1), 2) #Не понял зачем дублируем
 
 average_quity_SHAREHOLDERS_EQUITY = round((((SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]) ** 0.1) -1), 2)
 
@@ -94,7 +98,7 @@ print(f'operating_margin {operating_margin}')
 
 if operating_margin < 0.06:
     operating_margin_rating = -2
-elif 0.14 < operating_margin > 0.06:
+elif 0.14 > operating_margin > 0.06:
     operating_margin_rating = 0
 else:
     operating_margin_rating = 2
@@ -124,7 +128,7 @@ print(f'net_profit_margin {net_profit_margin}')
 
 if net_profit_margin < 0.06:
     net_profit_margin_rating = -2
-elif 0.1 < net_profit_margin > 0.06:
+elif 0.1 > net_profit_margin > 0.06:
     net_profit_margin_rating = 0
 else:
     net_profit_margin_rating = 2
@@ -156,7 +160,7 @@ print(f'EPS_growth {EPS_growth}')
 
 if EPS_growth < 0.06:
     EPS_growth_rating = -2
-elif 0.01 < EPS_growth > 0.06:
+elif 0.1 < EPS_growth > 0.06:
     EPS_growth_rating = 0
 else:
     EPS_growth_rating = 2
@@ -171,7 +175,7 @@ print(f'debt_level {debt_level}')
 
 if debt_level < 0.5:
     debt_level_rating = 1
-elif 0.7 < debt_level > 0.5:
+elif 0.7 > debt_level > 0.5:
     debt_level_rating = 0
 else:
     debt_level_rating = -1
@@ -187,7 +191,7 @@ print(f'ROE_average {ROE_average}')
 
 if ROE_average < 0.08:
     ROE_average_rating = -2
-elif 0.14 < ROE_average > 0.08:
+elif 0.14 > ROE_average > 0.08:
     ROE_average_rating = 0
 else:
     ROE_average_rating = 2
@@ -202,7 +206,7 @@ print(f'ROA_average {ROA_average}')
 
 if ROA_average < 0.06:
     ROA_average_rating = -1
-elif 0.08 < ROA_average > 0.06:
+elif 0.08 > ROA_average > 0.06:
     ROA_average_rating = 0
 else:
     ROA_average_rating = 1
@@ -215,6 +219,8 @@ print(Total_rating)
 print(f'Общая оценка = {sum(Total_rating)}')
 
 # ++++++++++++++++++++++++++++++++++  Оцениваем истинную стоимость  +++++++++++++++++++++++++++++++++++++++
+
+print('Считаем инвестиционную стоимость по дивидендной модели Гордона')
 
 def valuecompany(quote):
     Dtoday =   work_table['dividendsPaid'][0] / work_table['numberOfShares'][0]
@@ -255,16 +261,18 @@ def valuecompany(quote):
 
     DDM = (Dtoday * (1 + sustgrwothrate)) / (ke - sustgrwothrate)
 
-    print(f'DDM {DDM}')
+    print(f'Расчетная стоимость по модели Гордона {DDM}')
     return DDM
 
-valuecompany('AMZN')
+valuecompany(company)
 
 print(f'Время выполнения :{datetime.datetime.now() - start_time}') # Замер времени
 
 # ++++++++++++++++  Оцениваем истинную стоимость  Второй метод: Дисконтирование FCF ++++++++++++++++
 
 # темпы роста FCF Среднее геометрическое за 10 лет
+
+print('Расчет инвестиционной стоимости по двухфазной модели FCF')
 
 FCF_gmean = gmean(work_table['freeCashFlow'])
 
@@ -275,27 +283,27 @@ print(f'FCF_gmean = {FCF_gmean}')
 CF_forecast = {}
 
 
-CAGR_FCF1 = round((((work_table['freeCashFlow'][0]/work_table['freeCashFlow'][4]) ** 0.25) -1), 2)
+CAGR_FCF1 = round((((work_table['freeCashFlow'][0]/work_table['freeCashFlow'][9]) ** 0.25) -1), 2)
 FCF_guess_1 = (work_table['freeCashFlow'][0] * (1 + CAGR_FCF1))
 CF_forecast['next_year1'] = {}
 CF_forecast['next_year1']['freeCashFlow'] = FCF_guess_1
 
-CAGR_FCF2 = round((((FCF_guess_1/work_table['freeCashFlow'][3]) ** 0.25) -1), 2)
+CAGR_FCF2 = round((((FCF_guess_1/work_table['freeCashFlow'][8]) ** 0.25) -1), 2)
 FCF_guess_2 = (FCF_guess_1 * (1 + CAGR_FCF2))
 CF_forecast['next_year2'] = {}
 CF_forecast['next_year2']['freeCashFlow'] = FCF_guess_2
 
-CAGR_FCF3 = round((((FCF_guess_2/work_table['freeCashFlow'][2]) ** 0.25) -1), 2)
+CAGR_FCF3 = round((((FCF_guess_2/work_table['freeCashFlow'][7]) ** 0.25) -1), 2)
 FCF_guess_3 = (FCF_guess_2 * (1 + CAGR_FCF3))
 CF_forecast['next_year3'] = {}
 CF_forecast['next_year3']['freeCashFlow'] = FCF_guess_3
 
-CAGR_FCF4 = round((((FCF_guess_3/work_table['freeCashFlow'][1]) ** 0.25) -1), 2)
+CAGR_FCF4 = round((((FCF_guess_3/work_table['freeCashFlow'][6]) ** 0.25) -1), 2)
 FCF_guess_4 = (FCF_guess_3 * (1 + CAGR_FCF4))
 CF_forecast['next_year4'] = {}
 CF_forecast['next_year4']['freeCashFlow'] = FCF_guess_4
 
-CAGR_FCF5 = round((((FCF_guess_4/work_table['freeCashFlow'][0]) ** 0.25) -1), 2)
+CAGR_FCF5 = round((((FCF_guess_4/work_table['freeCashFlow'][5]) ** 0.25) -1), 2)
 FCF_guess_5 = (FCF_guess_4 * (1 + CAGR_FCF5))
 CF_forecast['next_year5'] = {}
 CF_forecast['next_year5']['freeCashFlow'] = FCF_guess_5
@@ -312,6 +320,8 @@ print(f'CAGR_FCF4 = {CAGR_FCF4}')
 print(f'FCF_guess_4 = {FCF_guess_4}')
 print(f'CAGR_FCF5 = {CAGR_FCF5}')
 print(f'FCF_guess_5 = {FCF_guess_5}')
+
+
 
 # ________________________________________  Расчет WACC  _______________________________________________
 
@@ -468,10 +478,10 @@ sum_num = npv + Terminal_value_Discounted
 print(f'sum_num = {sum_num}')
 
 spl_num = sum_num / work_table['numberOfShares'][0]
-print(f'spl_num = {spl_num}')
+print(f'Estimated price = {spl_num}')
 
-difference_model_and_market_value =  spl_num - work_table['price'][0]
-print(f'price = {work_table["price"][0]}')
+difference_model_and_market_value =  spl_num - PRICE
+print(f'stock price = {PRICE}')
 
 print(f'difference_model_and_market_value = {difference_model_and_market_value}')
 
@@ -488,5 +498,3 @@ print(f'difference_model_and_market_value = {difference_model_and_market_value}'
 # df.to_excel('income.xlsx')
 
 # https://github.com/razorhash/pyfmpcloud
-
-
