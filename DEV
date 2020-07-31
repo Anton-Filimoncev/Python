@@ -283,7 +283,7 @@ print(f'FCF_gmean = {FCF_gmean}')
 CF_forecast = {}
 
 
-CAGR_FCF1 = round((((work_table['freeCashFlow'][0]/work_table['freeCashFlow'][9]) ** 0.25) -1), 2)
+CAGR_FCF1 = round((((work_table['freeCashFlow'][0]/work_table['freeCashFlow'][9]) ** 0.1) -1), 2)
 FCF_guess_1 = (work_table['freeCashFlow'][0] * (1 + CAGR_FCF1))
 CF_forecast['next_year1'] = {}
 CF_forecast['next_year1']['freeCashFlow'] = FCF_guess_1
