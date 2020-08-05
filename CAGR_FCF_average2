@@ -285,28 +285,23 @@ CF_forecast = {}
 
 CAGR_FCF1 = round((((work_table['freeCashFlow'][0]/work_table['freeCashFlow'][9]) ** 0.1) -1), 2)
 FCF_guess_1 = (work_table['freeCashFlow'][0] * (1 + CAGR_FCF1))
-CF_forecast['next_year1'] = {}
-CF_forecast['next_year1']['freeCashFlow'] = FCF_guess_1
+
 
 CAGR_FCF2 = round((((FCF_guess_1/work_table['freeCashFlow'][8]) ** 0.25) -1), 2)
 FCF_guess_2 = (FCF_guess_1 * (1 + CAGR_FCF2))
-CF_forecast['next_year2'] = {}
-CF_forecast['next_year2']['freeCashFlow'] = FCF_guess_2
+
 
 CAGR_FCF3 = round((((FCF_guess_2/work_table['freeCashFlow'][7]) ** 0.25) -1), 2)
 FCF_guess_3 = (FCF_guess_2 * (1 + CAGR_FCF3))
-CF_forecast['next_year3'] = {}
-CF_forecast['next_year3']['freeCashFlow'] = FCF_guess_3
+
 
 CAGR_FCF4 = round((((FCF_guess_3/work_table['freeCashFlow'][6]) ** 0.25) -1), 2)
 FCF_guess_4 = (FCF_guess_3 * (1 + CAGR_FCF4))
-CF_forecast['next_year4'] = {}
-CF_forecast['next_year4']['freeCashFlow'] = FCF_guess_4
+
 
 CAGR_FCF5 = round((((FCF_guess_4/work_table['freeCashFlow'][5]) ** 0.25) -1), 2)
 FCF_guess_5 = (FCF_guess_4 * (1 + CAGR_FCF5))
-CF_forecast['next_year5'] = {}
-CF_forecast['next_year5']['freeCashFlow'] = FCF_guess_5
+
 
 print(CF_forecast)
 
@@ -317,7 +312,16 @@ FCF_guess_2 = (FCF_guess_1 * (1 + CAGR_FCF))
 FCF_guess_3= (FCF_guess_2 * (1 + CAGR_FCF))
 FCF_guess_4 = (FCF_guess_3 * (1 + CAGR_FCF))
 FCF_guess_5 = (FCF_guess_4 * (1 + CAGR_FCF))
-
+CF_forecast['next_year1'] = {}
+CF_forecast['next_year1']['freeCashFlow'] = FCF_guess_1
+CF_forecast['next_year2'] = {}
+CF_forecast['next_year2']['freeCashFlow'] = FCF_guess_2
+CF_forecast['next_year3'] = {}
+CF_forecast['next_year3']['freeCashFlow'] = FCF_guess_3
+CF_forecast['next_year4'] = {}
+CF_forecast['next_year4']['freeCashFlow'] = FCF_guess_4
+CF_forecast['next_year5'] = {}
+CF_forecast['next_year5']['freeCashFlow'] = FCF_guess_5
 
 
 print(f'CAGR_FCF = {CAGR_FCF}')
@@ -509,5 +513,3 @@ print(f'difference_model_and_market_value = {difference_model_and_market_value}'
 #
 # df = pd.DataFrame(income)
 # df.to_excel('income.xlsx')
-
-# https://github.com/razorhash/pyfmpcloud
