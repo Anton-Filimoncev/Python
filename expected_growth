@@ -12,35 +12,41 @@ import statsmodels.api as sm
 
 start_time = datetime.datetime.now() # Замер времени выполнения скрипта для одного тикера
 
+COMPANY = 'INGR'
+KEY = '19904f3a72ebd1574dc0e99f4b8333a6'
 
-company = 'MSFT'
+IS = requests.get(f'https://financialmodelingprep.com/api/v3/income-statement/{COMPANY}?apikey={KEY}').json()
+BL = requests.get(f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{COMPANY}?apikey={KEY}').json()
+RT = requests.get(f'https://financialmodelingprep.com/api/v3/ratios/{COMPANY}?apikey={KEY}').json()
+CF = requests.get(f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{COMPANY}?apikey={KEY}').json()
+EV = requests.get(f'https://financialmodelingprep.com/api/v3/enterprise-values/{COMPANY}?apikey={KEY}').json()
+PF = requests.get(f'https://financialmodelingprep.com/api/v3/profile/{COMPANY}?apikey={KEY}').json()
+CQ = requests.get(f'https://financialmodelingprep.com/api/v3/quote/{COMPANY}?apikey={KEY}').json()
 
-settings.set_apikey('ad046886b77603ac40ad4f29b87ade87')
-settings.get_apikey()
-settings.get_urlroot()
-settings.get_urlrootfmp()
-
-balance = cv.balance_sheet(f'{company}', period = 'annual', ftype = 'full')
-income = cv.income_statement(f'{company}', period = 'annual', ftype = 'full')
-financial_ratio = cv.financial_ratios(f'{company}', period = 'annual', ttm = False)
-cash_flow = cv.cash_flow_statement(f'{company}', period = 'annual', ftype = 'full')
-company_profile = sts.company_profile(f'{company}')
-enterprise_value = cv.enterprise_value(f'{company}', period = 'annual')
-real_time_quote = sts.real_time_quote(f'{company}')
+income_statement = pd.DataFrame(IS)
+balance = pd.DataFrame(BL)
+ratios = pd.DataFrame(RT)
+cash_flow = pd.DataFrame(CF)
+enterprise_value = pd.DataFrame(EV)
+company_profile = pd.DataFrame(PF)
+real_time_quote = pd.DataFrame(CQ)
 
 
-work_table = pd.concat((income[['fillingDate', 'revenue', 'operatingIncome', 'netIncome', 'eps', 'ebitda', 'depreciationAndAmortization', 'interestExpense']].replace(np.nan, 0)[0:10], balance[['totalAssets', 'totalLiabilities', 'totalStockholdersEquity', 'totalDebt']].replace(np.nan, 0)[0:10]
-                    ,financial_ratio[['dividendPayoutRatio', 'dividendYield', 'effectiveTaxRate']].replace(np.nan, 0)[0:10],cash_flow[['freeCashFlow', 'dividendsPaid']].replace(np.nan, 0)[0:10], enterprise_value[['numberOfShares', 'stockPrice']].replace(np.nan, 0)[0:10] ),
+work_table = pd.concat((income_statement[['date', 'revenue', 'operatingIncome', 'netIncome', 'eps', 'ebitda', 'depreciationAndAmortization', 'interestExpense']].replace(np.nan, 0)[0:10], balance[['totalAssets', 'totalLiabilities', 'totalStockholdersEquity', 'totalDebt']].replace(np.nan, 0)[0:10]
+                    ,ratios[['dividendPayoutRatio', 'dividendYield', 'effectiveTaxRate']].replace(np.nan, 0)[0:10],cash_flow[['freeCashFlow', 'dividendsPaid']].replace(np.nan, 0)[0:10], enterprise_value[['numberOfShares', 'stockPrice']].replace(np.nan, 0)[0:10] ),
                        axis = 1)
 
 LTGrowth = 0.02
 PRICE = real_time_quote['price'][0]
 
-company_profile_beta = company_profile['profile']['beta']
+company_profile_beta = company_profile['beta']
 
 Total_rating = []
 
 print(work_table)
+
+
+print('Расчет показателей качества')
 
 #--------------------------Расчет ожидаемого роста --------------------------------------------------
 
@@ -221,13 +227,13 @@ def wacc(company):
   return WACC
 
 
-RF_and_IntCov = interest_coveraga_and_RF(company)
+RF_and_IntCov = interest_coveraga_and_RF(COMPANY)
 RF = RF_and_IntCov[0]
 interest_coverage_ratio = RF_and_IntCov[1]
-ke = costofequity(company)
-kd = cost_of_debt(company,RF,interest_coverage_ratio)
-wacc_company = wacc(company)
-print('wacc of = ' + company + ' is \n'  + str((wacc_company*100))+'%')
+ke = costofequity(COMPANY)
+kd = cost_of_debt(COMPANY, RF, interest_coverage_ratio)
+wacc_company = wacc(COMPANY)
+print('wacc of = ' + COMPANY + ' is \n' + str((wacc_company * 100)) + '%')
 
 
 #FCF List of CFs for each year
