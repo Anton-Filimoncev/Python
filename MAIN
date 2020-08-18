@@ -529,7 +529,7 @@ for company in tickers[1:]:
     # ____________________Стоимость акции по дивам и балансовой стоимости(наивный метод)_____________________________
 
     try:
-        dvd_avg = np.mean(work_table['dividendYield'])  # Определим средний дивиденд
+        dvd_avg = np.mean((work_table['Dividend per Share']).astype(float))  # Определим средний дивиденд
         print(dvd_avg)
     except:
         dvd_avg = 0
@@ -570,7 +570,7 @@ for company in tickers[1:]:
     bvps_pred_lr = bvps_model.predict([19, 1])[0]  # Прогнозируем балансовую стоимость через 10 лет
     print(f'bvps_pred_lr через 10 лет: {bvps_pred_lr}' )
 
-    dvd_model = sm.OLS(work_table['dividendYield'], work_table[['year_index', 'intercept']]).fit()
+    dvd_model = sm.OLS((work_table['Dividend per Share']).astype(float), work_table[['year_index', 'intercept']]).fit()
 
     dvd_model.predict([19, 1])[0]  # Определить дивиденд через 10 лет
 
@@ -597,10 +597,11 @@ for company in tickers[1:]:
                  "majorDimension": "ROWS",
                  "values": [
                      [f"{round((wacc_company * 100), 2)}", f"{round(Gordon, 2)}", f"{round(spl_num, 2)}",
-                      f"{round(PRICE, 2)}", f"{round(aapl_intrinsic_lr, 2)}"],  
+                      f"{round(PRICE, 2)}", f"{round(aapl_intrinsic_lr, 2)}"],
                  ]},
             ]
         }
     ).execute()
     i += 1
+
 
