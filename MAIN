@@ -96,6 +96,7 @@ for company in tickers[1:]:
 
         ),axis=1)
 
+
     LTGrowth = 0.02
     PRICE = real_time_quote['price'][0]
 
@@ -571,7 +572,7 @@ for company in tickers[1:]:
     bvps_pred_lr = bvps_model.predict([19, 1])[0]  # Прогнозируем балансовую стоимость через 10 лет
     print(f'bvps_pred_lr через 10 лет: {bvps_pred_lr}' )
 
-    dvd_model = sm.OLS((work_table['Dividend per Share']).astype(float), work_table[['year_index', 'intercept']]).fit()
+    dvd_model = sm.OLS(work_table['Dividend per Share'][0:10].replace('', 0, regex=True).astype(float), work_table[['year_index', 'intercept']]).fit()
 
     dvd_model.predict([19, 1])[0]  # Определить дивиденд через 10 лет
 
