@@ -559,10 +559,11 @@ for company in tickers[1:]:
     # data_intrinsic - latest_price  # Маржа безопасности
 
     # 'year_index' as the order of the year
-    work_table['year_index'] = range(1, len(work_table) + 1)
+    work_table['year_index'] = range(1, len(work_table) + 1)[::-1]
     # add intercept
     work_table['intercept'] = 1
 
+    print(work_table['year_index'])
 
     # modeling
     bvps_model = sm.OLS(work_table['bookValuePerShare'], work_table[['year_index', 'intercept']]).fit()
@@ -593,11 +594,11 @@ for company in tickers[1:]:
         body={
             "valueInputOption": "USER_ENTERED",
             "data": [
-                {"range": f"B{i}:F{i}",
+                {"range": f"B{i}:G{i}",
                  "majorDimension": "ROWS",
                  "values": [
                      [f"{round((wacc_company * 100), 2)}", f"{round(Gordon, 2)}", f"{round(spl_num, 2)}",
-                      f"{round(PRICE, 2)}", f"{round(aapl_intrinsic_lr, 2)}"],
+                      f"{round(PRICE, 2)}", f"{round(aapl_intrinsic_lr, 2)}", f"{sum(Total_rating)}"],
                  ]},
             ]
         }
