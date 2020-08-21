@@ -99,7 +99,7 @@ for company in tickers[1:]:
                  np.nan, 0)[0:10],
              cash_flow[['freeCashFlow', 'dividendsPaid']].replace(np.nan, 0)[0:10],
              enterprise_value[['numberOfShares', 'stockPrice']].replace(np.nan, 0)[0:10],
-             key_metrics[['debtToEquity', 'bookValuePerShare', 'roe', 'currentRatio']].replace(np.nan,
+             key_metrics[['debtToEquity', 'bookValuePerShare', 'currentRatio']].replace(np.nan,
                                                                                                0)[0:10],
              financial_income_statement['Dividend per Share'].replace(np.nan, 0)[0:10]
 
@@ -244,17 +244,35 @@ for company in tickers[1:]:
 
         Total_rating.append(debt_level_rating)
 
-        # Считаем ROE_________________________________________________________________
+        # ___________________________________ ROE_DuPont _______________________________________________
 
-        ROE_average = round(np.mean(
-            (work_table['netIncome'] / work_table['revenue']) * (work_table['revenue'] / work_table['totalAssets']) * \
-            (work_table['totalAssets'] / work_table['totalStockholdersEquity'])), 2)
+        Profitability = []
+        TechnicalEfficiency = []
+        FinancialStructure = []
 
-        print(f'ROE_average {ROE_average}')
+        for year in range(0, 10):
+            last_year = year + 1
+            Profitability.append(work_table['netIncome'][year] / work_table['revenue'][year])
+            TechnicalEfficiency.append(work_table['revenue'][year] / (
+                    (work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2))
+            FinancialStructure.append(((work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2) /
+                                      ((work_table['totalStockholdersEquity'][year] +
+                                        balance['totalStockholdersEquity'].replace(np.nan, 0)[last_year]) / 2))
 
-        if ROE_average < 0.08:
+        work_table['Profitability'] = Profitability
+        work_table['TechnicalEfficiency'] = TechnicalEfficiency
+        work_table['FinancialStructure'] = FinancialStructure
+
+        work_table['ROE_DuPont'] = work_table['FinancialStructure'] * work_table['TechnicalEfficiency'] * \
+                                   work_table['Profitability']
+
+        ROE_DuPont = round(work_table['ROE_DuPont'].mean(axis=0), 5)
+
+        print(f'ROE_DuPont_average {ROE_DuPont}')
+
+        if ROE_DuPont < 0.08:
             ROE_average_rating = -2
-        elif 0.14 > ROE_average > 0.08:
+        elif 0.14 > ROE_DuPont > 0.08:
             ROE_average_rating = 0
         else:
             ROE_average_rating = 2
@@ -291,7 +309,7 @@ for company in tickers[1:]:
 
             # ROE and PAyout Ratio
 
-            ROE_formul = ROE_average
+            ROE_formul = ROE_DuPont
             print(f'ROE_formul {ROE_formul}')
 
             payout_ratio = work_table['dividendPayoutRatio'][0]
@@ -697,7 +715,6 @@ for company in tickers[1:]:
         print('The rsquared value is: ' + str(r2_FCF))
 
 
-
         # ~~~~~~~~~~~~~~~~~ ЗАПИСЬ В ТАБЛИЦУ ~~~~~~~~~~~~~~~~~
 
         values = service.spreadsheets().values().batchUpdate(
@@ -705,12 +722,13 @@ for company in tickers[1:]:
             body={
                 "valueInputOption": "USER_ENTERED",
                 "data": [
-                    {"range": f"B{i}:I{i}",
+                    {"range": f"B{i}:K{i}",
                      "majorDimension": "ROWS",
                      "values": [
                          [f"{round((wacc_company * 100), 2)}", f"{round(Gordon, 2)}", f"{round(spl_num, 2)}",
                           f"{round(PRICE, 2)}", f"{round(aapl_intrinsic_lr, 2)}", f"{sum(Total_rating)}",
-                          f"{round(r2, 3)}", f"{round(r2_FCF, 3)}"],
+                          f"{round(r2, 3)}", f"{round(r2_FCF, 3)}", f"{round(ROE_DuPont, 3)}"
+                          ],
                      ]},
                 ]
             }
