@@ -222,7 +222,7 @@ for company in tickers[1:]:
 
         if EPS_growth < 0.06:
             EPS_growth_rating = -2
-        elif 0.1 < EPS_growth > 0.06:
+        elif 0.1 > EPS_growth > 0.06:
             EPS_growth_rating = 0
         else:
             EPS_growth_rating = 2
