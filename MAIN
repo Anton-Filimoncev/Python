@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 KEY = '2105b9f242d47b69fc73f0f2205be048'
+LIST = 'Russell_1000'
 
 # ~~~~~~~~~~~~~~~~~~~~ GOOGLE SHEETS ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -47,7 +48,7 @@ service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
 # Чтения файла
 values = service.spreadsheets().values().get(
     spreadsheetId=spreadsheet_id,
-    range='A1:L1000',
+    range=f'''{LIST}!A1:L1000''',
     majorDimension='COLUMNS'
 ).execute()
 
@@ -247,39 +248,42 @@ for company in tickers[1:]:
         Total_rating.append(debt_level_rating)
 
         # ___________________________________ ROE_DuPont _______________________________________________
+        try:
+            Profitability = []
+            TechnicalEfficiency = []
+            FinancialStructure = []
 
-        Profitability = []
-        TechnicalEfficiency = []
-        FinancialStructure = []
+            for year in range(0, 10):
+                last_year = year + 1
+                Profitability.append(work_table['netIncome'][year] / work_table['revenue'][year])
+                TechnicalEfficiency.append(work_table['revenue'][year] / (
+                        (work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2))
+                FinancialStructure.append(((work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2) /
+                                          ((work_table['totalStockholdersEquity'][year] +
+                                            balance['totalStockholdersEquity'].replace(np.nan, 0)[last_year]) / 2))
 
-        for year in range(0, 10):
-            last_year = year + 1
-            Profitability.append(work_table['netIncome'][year] / work_table['revenue'][year])
-            TechnicalEfficiency.append(work_table['revenue'][year] / (
-                    (work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2))
-            FinancialStructure.append(((work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2) /
-                                      ((work_table['totalStockholdersEquity'][year] +
-                                        balance['totalStockholdersEquity'].replace(np.nan, 0)[last_year]) / 2))
+            work_table['Profitability'] = Profitability
+            work_table['TechnicalEfficiency'] = TechnicalEfficiency
+            work_table['FinancialStructure'] = FinancialStructure
 
-        work_table['Profitability'] = Profitability
-        work_table['TechnicalEfficiency'] = TechnicalEfficiency
-        work_table['FinancialStructure'] = FinancialStructure
+            work_table['ROE_DuPont'] = work_table['FinancialStructure'] * work_table['TechnicalEfficiency'] * \
+                                       work_table['Profitability']
 
-        work_table['ROE_DuPont'] = work_table['FinancialStructure'] * work_table['TechnicalEfficiency'] * \
-                                   work_table['Profitability']
+            ROE_DuPont = round(work_table['ROE_DuPont'].mean(axis=0), 5)
 
-        ROE_DuPont = round(work_table['ROE_DuPont'].mean(axis=0), 5)
+            print(f'ROE_DuPont_average {ROE_DuPont}')
 
-        print(f'ROE_DuPont_average {ROE_DuPont}')
+            if ROE_DuPont < 0.08:
+                ROE_average_rating = -2
+            elif 0.14 > ROE_DuPont > 0.08:
+                ROE_average_rating = 0
+            else:
+                ROE_average_rating = 2
 
-        if ROE_DuPont < 0.08:
-            ROE_average_rating = -2
-        elif 0.14 > ROE_DuPont > 0.08:
-            ROE_average_rating = 0
-        else:
-            ROE_average_rating = 2
+            Total_rating.append(ROE_average_rating)
 
-        Total_rating.append(ROE_average_rating)
+        except KeyError:
+            ROE_DuPont = 0
 
         # Считаем ROA_________________________________________________________________
 
@@ -601,7 +605,7 @@ for company in tickers[1:]:
             body={
                 "valueInputOption": "USER_ENTERED",
                 "data": [
-                    {"range": f"B{i}:K{i}",
+                    {"range": f"{LIST}!B{i}:K{i}",
                      "majorDimension": "ROWS",
                      "values": [
                          [f"{round((wacc_company * 100), 2)}", f"{round(Gordon, 2)}", f"{round(spl_num, 2)}",
@@ -622,7 +626,7 @@ for company in tickers[1:]:
             body={
                 "valueInputOption": "USER_ENTERED",
                 "data": [
-                    {"range": f"B{i}:G{i}",
+                    {"range": f"{LIST}!B{i}:G{i}",
                      "majorDimension": "ROWS",
                      "values": [
                          [f"Ошибка тикера", f"Ошибка тикера", f"Ошибка тикера",
