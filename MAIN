@@ -62,6 +62,7 @@ for ticker in tickers[1:]:
 i = 2
 
 for company in tickers[1:]:
+    time.sleep(0.5)  # Задержка для гугл таблиц
     try:
         print('*' * 50)
         print(f'Анализируем компанию: {company}')
@@ -109,7 +110,7 @@ for company in tickers[1:]:
              ), axis=1)
 
         LTGrowth = 0.02
-        PRICE = real_time_quote['price'][0]
+        PRICE = real_time_quote['price'].replace(np.nan, 0)[0]
         LTdis = 0.08
 
         company_profile_beta = company_profile['beta']
@@ -118,7 +119,7 @@ for company in tickers[1:]:
 
         # считаем рост выручки_____________________________________________________________________
 
-        revenue_growth = round((((work_table['revenue'][0] / work_table['revenue'][9]) ** 0.1) - 1), 2)
+        revenue_growth = round((((work_table['revenue'][0] / work_table['revenue'].last_valid_index()) ** 0.1) - 1), 2)
 
         print(f'revenue_growth {revenue_growth}')
 
@@ -468,7 +469,7 @@ for company in tickers[1:]:
             dvd_total = dvd_total + dvd_avg / (1 + risk_free_rate) ** j
         print(dvd_total)
 
-        growth_rate_of_10y = (work_table['bookValuePerShare'][0]) / (work_table['bookValuePerShare'][9])
+        growth_rate_of_10y = (work_table['bookValuePerShare'][0]) / (work_table['bookValuePerShare'].last_valid_index())
         avg_growth_rate = growth_rate_of_10y ** (1 / 10)
         print(avg_growth_rate)
 
@@ -618,7 +619,7 @@ for company in tickers[1:]:
         ).execute()
         i += 1
 
-        time.sleep(0.5) # Задержка для гугл таблиц
+
 
     except KeyError:
         values = service.spreadsheets().values().batchUpdate(
