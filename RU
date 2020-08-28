@@ -1,0 +1,841 @@
+import os
+import requests
+from time import sleep
+from selenium import *
+from selenium.common.exceptions import NoSuchElementException
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.keys import Keys
+import httplib2
+import apiclient.discovery
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
+import httplib2
+from pprint import pprint
+from datetime import datetime
+import time
+import numpy as np
+import numpy_financial as npf
+from pandas_datareader import data as wb
+from scipy.stats.mstats import gmean
+import statsmodels.api as sm
+from scipy import stats
+import time
+import datetime
+from sklearn.metrics import r2_score
+import matplotlib.pyplot as plt
+from scipy import stats
+
+
+
+LIST = 'RU'
+BETA = []
+
+
+
+# Файл, полученный в Google Developer Console
+CREDENTIALS_FILE = 'Seetzzz-1cb93f64d8d7.json'
+# ID Google Sheets документа (можно взять из его URL)
+spreadsheet_id = '1bfNJIgSEo9V5Jww1-EoUh_onba2bGY2LpDVx4aYlPzc'
+spreadsheet_id2 = '1A3leW6ZfsoVEPXZsv0Loj4eAbyKRchnHrJLdP4RIXDA'
+
+# Авторизуемся и получаем service — экземпляр доступа к API
+credentials = ServiceAccountCredentials.from_json_keyfile_name(
+    CREDENTIALS_FILE,
+    ['https://www.googleapis.com/auth/spreadsheets',
+     'https://www.googleapis.com/auth/drive'])
+httpAuth = credentials.authorize(httplib2.Http())
+service = apiclient.discovery.build('sheets', 'v4', http = httpAuth)
+
+# ____________________________Парсим тикеры !!!!С ТАБЛИЦЫ!!!! и работаем с ними _______________________________________
+
+# Чтения файла
+values = service.spreadsheets().values().get(
+    spreadsheetId=spreadsheet_id,
+    range=f'''{LIST}!A1:L1000''',
+    majorDimension='COLUMNS'
+).execute()
+
+tickers = values['values'][0]
+
+
+i = 2
+
+# ____________________________Основной цикл _______________________________________
+for ticker in tickers[1:]:
+
+
+# ____________________ Работа с Selenium ____________________________
+    path = os.path.join(os.getcwd(), 'chromedriver')
+    chrome_options = Options()
+    # chrome_options.add_argument("--headless")
+
+    # Здесь нужно указать путь куда будут сохратяться Excel таблицы а компьютере
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    chrome_options.add_experimental_option("prefs", {"download.default_directory": f'J:\Новая папка\{ticker}'})
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # Здесь нужно указать путь куда будут сохратяться Excel таблицы а компьютере
+
+    try:
+        checker = webdriver.Chrome(executable_path=path, chrome_options=chrome_options)
+        checker.get(f'https://www.morningstar.com/stocks/misx/{ticker}/financials')
+
+        sleep(5)
+
+        barcode = "itmednov@gmail.com"
+        password = 'CSRmHC4&_3dVGk3'
+
+        sign_in_click = checker.find_element_by_xpath('''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mds-page-shell__header']/div[@class='mds-page-shell__header-inner']/header[@class='mdc-masthead mds-masthead default-layout__masthead']/div[@class='mdc-masthead__inner mds-masthead__inner']/div[@class='mds-masthead__right']/div[@class='mdc-user-popover']/a[@class='mdc-link mdc-button mds-button mdc-user-popover__sign-in mds-button--flat mds-button--flat-icon-m']/span[@class='mdc-button__content mdc-button__text mds-button__text']''')
+        sign_in_click.click()
+        sign_in_userName = checker.find_element_by_name("userName")
+        sign_in_userName.send_keys(barcode)
+        sign_in_password = checker.find_element_by_name("password")
+        sign_in_password.send_keys(password)
+        sign_in = checker.find_element_by_xpath('''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell form-layout mdc-page-shell--narrow']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='sign-in']/div/form[@class='mds-form mdc-form mdc-sign-in-form sign-in__form mds-form--large-layout']/div[@class='mdc-sign-in-form__actions']/button[@class='mdc-button mds-button mds-button--primary mds-button--large']/span[@class='mdc-button__content']''')
+        sign_in.click()
+
+        sleep(12)
+
+        select_field_income = checker.find_element_by_xpath('''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-financials ng-scope']/div[@class='sal-components-financials--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-new-financials ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div/div[@class='sal-component-body']/div[@class='sal-row'][2]/div[@class='sal-component-ctn sal-component-card sal-component-financials-summary sal-eqcss-financials-summary ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-body']/div[@class='sal-tab-content ng-scope']/div[@class='sal-summary-section ng-scope'][1]/div[@class='sal-summary-section__header sal-icon-link']/a[@class='mds-link ng-binding ng-scope']''')
+        select_field_income.click()
+        sleep(4)
+        select_field_income_download = checker.find_element_by_xpath('''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-financials ng-scope']/div[@class='sal-components-financials--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-new-financials ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-row ng-scope']/div[@class='sal-component-ctn sal-component-card sal-component-financials-details ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-header']/div[@class='sal-financials-details__exportSection ng-scope']/button[@class='sal-financials-details__export mds-button mds-button--small']/span[@class='mds-button__text ng-binding']''')
+        select_field_income_download.click()
+
+        sleep(4)
+
+        select_back = checker.find_element_by_xpath('''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-financials ng-scope']/div[@class='sal-components-financials--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-new-financials ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-row ng-scope']/div[@class='sal-component-ctn sal-component-card sal-component-financials-details ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-body']/div[@class='sal-financials-details__backToSummary sal-icon-link']/h4[@class='sal-back-link']/a[@class='mds-link']/span[@class='sal-back-link__text ng-binding']''')
+        select_back.click()
+        sleep(4)
+
+        select_field_balance = checker.find_element_by_xpath(
+          '''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-financials ng-scope']/div[@class='sal-components-financials--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-new-financials ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[1]/div[@class='sal-component-body']/div[@class='sal-row'][2]/div[@class='sal-component-ctn sal-component-card sal-component-financials-summary sal-eqcss-financials-summary ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-body']/div[@class='sal-tab-content ng-scope']/div[@class='sal-summary-section ng-scope'][2]/div[@class='sal-summary-section__header sal-icon-link']/a[@class='mds-link ng-binding ng-scope']''')
+        select_field_balance.click()
+        sleep(4)
+
+        select_field_balance_download = checker.find_element_by_xpath('''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-financials ng-scope']/div[@class='sal-components-financials--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-new-financials ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-row ng-scope']/div[@class='sal-component-ctn sal-component-card sal-component-financials-details ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-header']/div[@class='sal-financials-details__exportSection ng-scope']/button[@class='sal-financials-details__export mds-button mds-button--small']/span[@class='mds-button__text ng-binding']''')
+        select_field_balance_download.click()
+        sleep(4)
+
+        select_back = checker.find_element_by_xpath(
+          '''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-financials ng-scope']/div[@class='sal-components-financials--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-new-financials ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-row ng-scope']/div[@class='sal-component-ctn sal-component-card sal-component-financials-details ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-body']/div[@class='sal-financials-details__backToSummary sal-icon-link']/h4[@class='sal-back-link']/a[@class='mds-link']/span[@class='sal-back-link__text ng-binding']''')
+        select_back.click()
+        sleep(4)
+
+        select_field_cash = checker.find_element_by_xpath(
+          '''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-financials ng-scope']/div[@class='sal-components-financials--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-new-financials ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div/div[@class='sal-component-body']/div[@class='sal-row'][2]/div[@class='sal-component-ctn sal-component-card sal-component-financials-summary sal-eqcss-financials-summary ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-body']/div[@class='sal-tab-content ng-scope']/div[@class='sal-summary-section ng-scope'][3]/div[@class='sal-summary-section__header sal-icon-link']/a[@class='mds-link ng-binding ng-scope']''')
+        select_field_cash.click()
+        sleep(4)
+
+        select_field_cash_download = checker.find_element_by_xpath(
+          '''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-financials ng-scope']/div[@class='sal-components-financials--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-new-financials ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-row ng-scope']/div[@class='sal-component-ctn sal-component-card sal-component-financials-details ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-header']/div[@class='sal-financials-details__exportSection ng-scope']/button[@class='sal-financials-details__export mds-button mds-button--small']/span[@class='mds-button__text ng-binding']''')
+        select_field_cash_download.click()
+        sleep(4)
+
+
+        select_back_quote = checker.find_element_by_xpath(
+          '''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/nav[@class='mdc-tab-bar stock__tab-bar mdc-tab-bar--tertiary']/ul[@class='mdc-tab-bar__inner']/li[@id='stock__tab-quote']/span[@class='mdc-tab-bar-item__inner']/a[@class='mdc-tab-bar-item__button mds-button mds-button--flat']''')
+        select_back_quote.click()
+        sleep(4)
+
+
+        select_field_Key_Ratios = checker.find_element_by_xpath(
+          '''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-quote ng-scope']/div[@class='sal-components-quote--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-quote sal-eqcss-quote ng-isolate-scope sal-component-quote-no-header']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-body']/div[@class='sal-row']/div[@class='sal-small-12 sal-medium-12 sal-large-6 sal-columns'][2]/div[@class='quote-header clearfix']/sal-components-segment-band/div[@class='sal-component-ctn sal-component-segment-band']/div[@class='segment-band__tabs']/mwc-tabs[@id='tabs']/div[@class='mwc-tabs']/mds-button-group/div[@class='mds-button-group']/slot/div/mds-button[2]/label[@class='mds-button__input-outer-wrapper']/input[@class='mds-button__input']''')
+        select_field_Key_Ratios.click()
+        sleep(4)
+
+        select_field_Full_Key_Ratios = checker.find_element_by_xpath(
+          '''/html/body/div[@id='__nuxt']/div[@id='__layout']/div[@class='mdc-page-shell mds-page-shell default-layout']/div[@class='mdc-page-shell__content mds-page-shell__content']/main[@class='stock']/div[@class='stock__content']/div[@class='mdc-grid mds-layout-grid']/div[@class='mdc-row mds-layout-grid__row']/div[@class='mdc-column mds-layout-grid__col stock__content-sal mds-layout-grid__col--12 mds-layout-grid__col--auto-at-1092']/sal-components/section[@class='sal-component-wrapper']/div[@class='sal-wrapper']/div[@class='sal-stocks-quote ng-scope']/div[@class='sal-components-quote--wrapper sal-component']/div[@class='sal-component-ctn sal-component-card sal-component-quote sal-eqcss-quote ng-isolate-scope sal-component-quote-no-header']/div[@class='sal-row']/div[@class='sal-small-12 sal-columns']/div[@class='sal-component-body']/div[@class='sal-row']/div[@class='sal-small-12 sal-medium-12 sal-large-6 sal-columns'][2]/div[@class='key-stats-content ng-scope']/div[@class='sal-component-ctn sal-component-card sal-component-key-stats ng-isolate-scope']/div[@class='sal-row']/div[@class='sal-full-key-ratios']/a[@class='mds-link ng-binding']''')
+        select_field_Full_Key_Ratios.click()
+        sleep(8)
+
+
+        checker.switch_to_window(checker.window_handles[1])
+
+        checker.find_element_by_tag_name('body').send_keys(Keys.CONTROL + Keys.TAB)
+
+        select_field_Full_Key_Ratios_download = checker.find_element_by_xpath(
+          '''/html/body/div[@class='wrapper']/div[@class='r_bodywrap']/div[@id='keystuts']/div[@id='financeWrap']/div[@class='col5']/div[@id='financials']/div[@class='r_tbar0 positionrelative']/div[@class='export_list_financials']/a[@class='large_button']/div''')
+        select_field_Full_Key_Ratios_download.click()
+        sleep(4)
+
+        sleep(2)
+        checker.get(f'https://finance.yahoo.com/quote/{ticker}.ME?p={ticker}.ME')
+        select_beta = checker.find_element_by_xpath(
+          '''/html[@id='atomic']/body/div[@id='app']/div/div/div[@id='render-target-default']/div[@class='Bgc($bg-body) Mih(100%) W(100%) Bgc($layoutBgColor)! finance US']/div[@class='Pos(r) Bgc($bg-content) Bgc($lv2BgColor)! Miw(1007px) Maw(1260px) tablet_Miw(600px)--noRightRail Bxz(bb) Bdstartc(t) Bdstartw(20px) Bdendc(t) Bdends(s) Bdendw(20px) Bdstarts(s) Mx(a)']/div[@id='YDC-Col1']/div[@id='Main']/div[1]/div[@id='mrt-node-Col1-0-QuoteSummary']/div[@id='Col1-0-QuoteSummary-Proxy']/div[@id='quote-header']/div[@id='quote-summary']/div[@class='D(ib) W(1/2) Bxz(bb) Pstart(12px) Va(t) ie-7_D(i) ie-7_Pos(a) smartphone_D(b) smartphone_W(100%) smartphone_Pstart(0px) smartphone_BdB smartphone_Bdc($seperatorColor)']/table[@class='W(100%) M(0) Bdcl(c)']/tbody/tr[@class='Bxz(bb) Bdbw(1px) Bdbs(s) Bdc($seperatorColor) H(36px) '][2]/td[@class='Ta(end) Fw(600) Lh(14px)']''')
+        BETA.append(select_beta.text)
+        sleep(4)
+
+        checker.close()
+        checker.switch_to_window(checker.window_handles[0])
+        checker.close()
+    except NoSuchElementException:
+        checker.close()
+        values = service.spreadsheets().values().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={
+                "valueInputOption": "USER_ENTERED",
+                "data": [
+                    {"range": f"{LIST}!B{i}:G{i}",
+                     "majorDimension": "ROWS",
+                     "values": [
+                         [f"Ошибка тикера", f"Проверьте", f"Корректность",
+                          f"URL", f"на", f"сайте"],
+                     ]},
+                ]
+            }
+        ).execute()
+        i += 1
+        continue
+
+
+
+    # _______________________________ Генерируем основную таблицу _______________________________
+
+    # Читаем файлы
+        # Здесь нужно указать путь Excel таблицы на компьютере
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Income_df = pd.read_excel(f'''J:\Новая папка\{ticker}\Income Statement_Annual_As Originally Reported.xls''').apply(lambda x: x.str.replace(',', ''))
+    Balance_df = pd.read_excel(f'''J:\Новая папка\{ticker}\Balance Sheet_Annual_As Originally Reported.xls''').apply(lambda x: x.str.replace(',', ''))
+    Key_Ratios_df = pd.read_csv(f'''J:\Новая папка\{ticker}\{ticker} Key Ratios.csv''', skiprows=2, index_col='Unnamed: 0').apply(lambda x: x.str.replace(',', ''))
+    Cash_df = pd.read_excel(f'''J:\Новая папка\{ticker}\Cash Flow_Annual_As Originally Reported.xls''').apply(lambda x: x.str.replace(',', ''))
+# Здесь нужно указать путь Excel таблицы на компьютере
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    date = pd.DataFrame([['2019'], ['2018'], ['2017'], ['2016'], ['2015'], ['2014'], ['2013'], ['2012'], ['2011'], ['2010']], columns = ['date'])
+    # date = date.T
+
+    Key_Ratios_df = Key_Ratios_df.T[::-1][1:]
+    Balance_df = Balance_df.T[::-1]
+    Income_df = Income_df.T[::-1]
+    Cash_df = Cash_df.T[::-1]
+
+    Key_Ratios_df['date'] = ['2019', '2018', '2017', '2016', '2015', '2014', '2013', '2012', '2011', '2010']
+
+    try:
+        Income_df.columns = Income_df.iloc[11]
+        Balance_df.columns = Balance_df.iloc[10]
+        Cash_df.columns = Cash_df.iloc[11]
+    except IndexError:
+        Balance_df.columns = Balance_df.iloc[8]
+        Income_df.columns = Income_df.iloc[11]
+        Cash_df.columns = Cash_df.iloc[11]
+
+
+
+    Key_Ratios_df.set_index(['date'], inplace = True)
+    # print(date)
+
+
+
+    Key_Ratios_df.to_excel("Key_Ratios_df.xlsx")
+    Income_df.to_excel("Key_Ratios_df.xlsx")
+    Balance_df.to_excel("Key_Ratios_df.xlsx")
+    Cash_df.to_excel("Key_Ratios_df.xlsx")
+
+    try :
+        Income_df[['revenue', 'depreciationAndAmortization', 'interestExpense', 'incomeBeforeTax', '        Cost of Goods and Services'
+                   ]] = pd.DataFrame(Income_df[['    Total Revenue', '    Depreciation Amortization and Depletion',
+                   '            Interest Expense Net of Capitalized Interest', 'Pretax Income', '        Cost of Goods and Services'
+                    ]])
+    except (KeyError):
+        try:
+            Income_df['depreciationAndAmortization'] = 0
+            Income_df[['revenue', 'interestExpense', 'incomeBeforeTax'
+                       ]]= pd.DataFrame(Income_df[['    Total Revenue',
+                       '            Interest Expense Net of Capitalized Interest', 'Pretax Income']])
+        except ValueError:
+            Income_df['revenue'] = 0
+            Income_df['interestExpense'] = 0
+            Income_df['incomeBeforeTax'] = 0
+
+    try :
+        Income_df[['revenue', '        Cost of Goods and Services'
+                   ]] = pd.DataFrame(Income_df[['    Total Revenue',  '        Cost of Goods and Services'
+                    ]])
+
+    except KeyError:
+        Income_df['        Cost of Goods and Services'] = 0
+
+
+
+    Balance_df[['totalAssets', 'totalLiabilities', 'totalStockholdersEquity'
+                ]] = pd.DataFrame(Balance_df[['Total Assets', 'Total Liabilities', '    Equity Attributable to Parent Stockholders',
+                ]])
+
+    try:
+        Key_Ratios_df[['eps', 'dividendPayoutRatio', 'effectiveTaxRate', 'debtToEquity', 'bookValuePerShare',
+                        'currentRatio', 'operatingIncome', 'netIncome', 'freeCashFlow', 'numberOfShares', 'Dividends USD'
+                       ]] = pd.DataFrame(Key_Ratios_df[['Earnings Per Share USD', 'Payout Ratio % *', 'Tax Rate %', 'Debt/Equity',
+                                        'Book Value Per Share * USD', 'Current Ratio', 'Operating Income USD Mil',
+                                        'Net Income USD Mil', 'Free Cash Flow USD Mil', 'Shares Mil', 'Dividends USD']][1:11])
+
+    except KeyError:
+        Key_Ratios_df[['eps', 'dividendPayoutRatio', 'effectiveTaxRate', 'debtToEquity', 'bookValuePerShare',
+                       'currentRatio', 'operatingIncome', 'netIncome', 'freeCashFlow', 'numberOfShares', 'Dividends USD'
+                       ]] = pd.DataFrame(
+            Key_Ratios_df[['Earnings Per Share RUB', 'Payout Ratio % *', 'Tax Rate %', 'Debt/Equity',
+                           'Book Value Per Share * RUB', 'Current Ratio', 'Operating Income RUB Mil',
+                           'Net Income RUB Mil', 'Free Cash Flow RUB Mil', 'Shares Mil', 'Dividends RUB']])
+
+    Cash_df['dividendsPaid'] = pd.DataFrame(Cash_df[['            Cash Dividends Paid']])
+
+
+    work_table = pd.concat(
+        (Income_df[['revenue', 'depreciationAndAmortization', 'interestExpense', 'incomeBeforeTax',
+                    '        Cost of Goods and Services', '    Selling General and Administrative Expenses'
+               ]].fillna(0)[1:11].astype(float),
+        Balance_df[['totalAssets', 'totalLiabilities', 'totalStockholdersEquity', '                Current Debt','                Long Term Debt',
+                    '            Cash and Cash Equivalents']].fillna(0)[1:10].astype(float),
+
+        Key_Ratios_df[['eps', 'dividendPayoutRatio', 'effectiveTaxRate', 'debtToEquity', 'bookValuePerShare',
+                    'currentRatio', 'operatingIncome', 'freeCashFlow', 'numberOfShares', 'Dividends USD', 'netIncome'
+                   ]].fillna(0)[0:10].astype(float),
+
+        Cash_df['dividendsPaid'].fillna(0)[1:11].astype(float)
+
+        ), axis=1)
+
+
+
+    work_table.replace('', 0, regex=True)
+    work_table.replace('NaN', 0, regex=True)
+
+    work_table['totalDebt'] = work_table['                Current Debt'].replace(np.nan, 0)[0:10] + \
+                              work_table['                Long Term Debt'].replace(np.nan, 0)[0:10]
+    work_table['netDebt'] = work_table['                Current Debt'].fillna(0)[0:10] + (work_table['                Long Term Debt'].fillna(0)[0:10]) \
+              -  work_table['            Cash and Cash Equivalents'].fillna(0)[0:10]
+
+    try:
+        work_table['ebitda'] =  work_table['revenue'] - work_table['    Selling General and Administrative Expenses'] -\
+                                work_table['        Cost of Goods and Services'] + work_table['depreciationAndAmortization']
+    except KeyError:
+        work_table['ebitda'] = 0
+
+    PRICE = wb.get_quote_yahoo(f'{ticker}.ME')['price']
+
+    work_table['stockPrice'] = PRICE[0]
+
+    work_table['dividendYield'] = work_table['Dividends USD'] / work_table['stockPrice'] # ?????????????????????????????
+    work_table['Dividend per Share'] = work_table['Dividends USD'] / work_table['numberOfShares']
+
+    work_table['mktCap'] = wb.get_quote_yahoo(f'{ticker}.ME')['marketCap']
+
+    BETA = ['0.93']
+
+    beta = float(BETA[0])
+
+    work_table.to_excel("work_table.xlsx")
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ РАСЧЕТНАЯ ЧАСТЬ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+    LTGrowth = 0.02
+
+    LTdis = 0.08
+
+    company_profile_beta = 1
+
+    Total_rating = []
+
+    # считаем рост выручки_____________________________________________________________________
+
+    revenue_growth = round((((work_table['revenue'][0] / work_table['revenue'][9]) ** 0.1) - 1), 2)
+
+    print(f'revenue_growth {revenue_growth}')
+
+    if revenue_growth > 0.06:
+        revenue_growth_rating = 1
+    elif 0.05 > revenue_growth > 0.02:
+        revenue_growth_rating = 0
+    else:
+        revenue_growth_rating = -1
+
+    Total_rating.append(revenue_growth_rating)
+
+    # считаем Использование прибыли______________________________________________________________
+    average_dividend_payout_percentage = np.mean(work_table['dividendYield'][0:])
+
+    # average_percentage_of_buyback  # не найден   !!!!!!!!!!!!!!!!!!!!!!
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+    SHAREHOLDERS_EQUITY = (work_table['totalAssets'] - work_table['totalLiabilities'])
+
+    average_quity_SHAREHOLDERS_EQUITY = round((((SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]) ** 0.1) - 1), 2)
+
+    use_of_profit = round((average_dividend_payout_percentage + average_quity_SHAREHOLDERS_EQUITY), 2)
+
+    print(f'use_of_profit {use_of_profit}')
+
+    if use_of_profit < 0.06:
+        use_of_profit_rating = -2
+    elif 0.1 < use_of_profit > 0.06:
+        use_of_profit_rating = 0
+    else:
+        use_of_profit_rating = 2
+
+    Total_rating.append(use_of_profit_rating)
+
+    # Считаем Операционную маржу_________________________________________________________________
+
+    OPERATING_MAR = work_table['operatingIncome'] / work_table['revenue']
+
+    operating_margin = round(np.mean(OPERATING_MAR[0:]), 2)
+
+    print(f'operating_margin {operating_margin}')
+
+    if operating_margin < 0.06:
+        operating_margin_rating = -2
+    elif 0.14 > operating_margin > 0.06:
+        operating_margin_rating = 0
+    else:
+        operating_margin_rating = 2
+
+    Total_rating.append(operating_margin_rating)
+
+    # Считаем Динамику операционной маржи_________________________________________________________________
+
+    if OPERATING_MAR.std() < 0.1:
+        operating_margin_dynamics = 'Рост'
+        operating_margin_dynamics_rating = 2
+    else:
+        operating_margin_dynamics = 'Падение'
+        operating_margin_dynamics_rating = -2
+
+    Total_rating.append(operating_margin_dynamics_rating)
+
+    print(f'operating_margin_dynamics {operating_margin_dynamics}')
+
+    # Считаем Маржу чистой прибыли_________________________________________________________________
+
+    NET_PROFIT_MAR = work_table['netIncome'] / work_table['revenue']
+
+    net_profit_margin = round(np.mean(NET_PROFIT_MAR[0:]), 2)
+
+    print(f'net_profit_margin {net_profit_margin}')
+
+    if net_profit_margin < 0.06:
+        net_profit_margin_rating = -2
+    elif 0.1 > net_profit_margin > 0.06:
+        net_profit_margin_rating = 0
+    else:
+        net_profit_margin_rating = 2
+
+    Total_rating.append(net_profit_margin_rating)
+
+    # Считаем Динамику маржи чистой прибыли_________________________________________________________________
+
+    if NET_PROFIT_MAR.std() < 0.1:
+        net_profit_margin_dynamics = 'Рост'
+        net_profit_margin_dynamics_rating = 1
+    else:
+        net_profit_margin_dynamics = 'Падение'
+        net_profit_margin_dynamics_rating = -1
+
+    Total_rating.append(net_profit_margin_dynamics_rating)
+
+    print(f'net_profit_margin_dynamics {net_profit_margin_dynamics}')
+
+    # Считаем Рост EPS_________________________________________________________________
+
+    EPS_growth = round((((work_table['eps'][0] / work_table['eps'][9]) ** 0.1) - 1),
+                       2)  # Первый вариант, eps - берем из API
+
+    print(f'EPS_growth {EPS_growth}')
+
+    if EPS_growth < 0.06:
+        EPS_growth_rating = -2
+    elif 0.1 > EPS_growth > 0.06:
+        EPS_growth_rating = 0
+    else:
+        EPS_growth_rating = 2
+
+    Total_rating.append(EPS_growth_rating)
+
+    # Считаем Уровень долга_________________________________________________________________
+
+    debt_level = round(np.mean(work_table['totalLiabilities'] / work_table['totalAssets']), 2)
+
+    print(f'debt_level {debt_level}')
+
+    if debt_level < 0.5:
+        debt_level_rating = 1
+    elif 0.7 > debt_level > 0.5:
+        debt_level_rating = 0
+    else:
+        debt_level_rating = -1
+
+    Total_rating.append(debt_level_rating)
+
+    # ___________________________________ ROE_DuPont _______________________________________________
+    try:
+        Profitability = []
+        TechnicalEfficiency = []
+        FinancialStructure = []
+
+        for year in range(0, 9):
+            last_year = year + 1
+            Profitability.append(work_table['netIncome'][year] / work_table['revenue'][year])
+            TechnicalEfficiency.append(work_table['revenue'][year] / (
+                    (work_table['totalAssets'][year] + work_table['totalAssets'].replace(np.nan, 0)[last_year]) / 2))
+            FinancialStructure.append(
+                ((work_table['totalAssets'][year] + work_table['totalAssets'].replace(np.nan, 0)[last_year]) / 2) /
+                ((work_table['totalStockholdersEquity'][year] +
+                  work_table['totalStockholdersEquity'].replace(np.nan, 0)[last_year]) / 2))
+
+        work_table['Profitability'] = Profitability + [0]
+        work_table['TechnicalEfficiency'] = TechnicalEfficiency + [0]
+        work_table['FinancialStructure'] = FinancialStructure + [0]
+
+
+
+        work_table['ROE_DuPont'] = work_table['FinancialStructure'] * work_table['TechnicalEfficiency'] * \
+                                   work_table['Profitability']
+
+        ROE_DuPont = round(work_table['ROE_DuPont'].mean(axis=0), 5)
+
+        print(f'ROE_DuPont_average {ROE_DuPont}')
+
+        if ROE_DuPont < 0.08:
+            ROE_average_rating = -2
+        elif 0.14 > ROE_DuPont > 0.08:
+            ROE_average_rating = 0
+        else:
+            ROE_average_rating = 2
+
+        Total_rating.append(ROE_average_rating)
+
+    except KeyError:
+        ROE_DuPont = 0
+
+    # Считаем ROA_________________________________________________________________
+
+    ROA_average = round(np.mean(work_table['netIncome'] / work_table['totalAssets']), 2)
+
+    print(f'ROA_average {ROA_average}')
+
+    if ROA_average < 0.06:
+        ROA_average_rating = -1
+    elif 0.08 > ROA_average > 0.06:
+        ROA_average_rating = 0
+    else:
+        ROA_average_rating = 1
+
+    Total_rating.append(ROA_average_rating)
+
+    # Получаем общую оценку_________________________________________________________________
+
+    print(Total_rating)
+    print(f'Общая оценка = {sum(Total_rating)}')
+
+    # ++++++++++++++++++++++++++++++++++  Оцениваем истинную стоимость  +++++++++++++++++++++++++++++++++++++++
+
+    print('Считаем инвестиционную стоимость по дивидендной модели Гордона')
+
+    Dtoday = work_table['dividendsPaid'][0] / work_table['numberOfShares'][0]
+
+    # ROE and PAyout Ratio
+
+    ROE_formul = ROE_DuPont
+    print(f'ROE_formul {ROE_formul}')
+
+    payout_ratio = work_table['dividendPayoutRatio'].median()
+    sustgrwothrate = ROE_formul * (1 - payout_ratio)
+
+    ##Cost of equity:
+    # Risk Free Rate
+    start = datetime.datetime(2019, 2, 1)
+    end = datetime.datetime.today().strftime('%Y-%m-%d')
+
+    Treasury = wb.DataReader(['DGS10'], 'fred', start, end)
+    RF = float(Treasury.iloc[-1])
+    RF = RF / 100
+    print(f'RF {RF}')
+
+    # Beta
+    beta = float(company_profile_beta)
+    print(f'beta {beta}')
+
+    # Market Return
+    # Считаем годовую доходность
+    data = wb.DataReader('IMOEX.ME', data_source='yahoo', start='2001-1-1')  # нужно определиться с переменной
+    data['simple_return'] = (data['Adj Close'] / data['Adj Close'].shift(1)) - 1
+    data['simple_return'].replace(np.nan, 0)
+    avg_returns_a = data['simple_return'].mean() * 250
+
+    print(f'Годовая доходность {avg_returns_a}')
+
+    # Drop all Not a number values using drop method.
+    ke = RF + (beta * (avg_returns_a - RF))
+
+    Gordon = (Dtoday * (1 + sustgrwothrate)) / (ke - sustgrwothrate)
+
+    print(f'Расчетная стоимость по модели Гордона {Gordon}')
+
+    print('******** Расчет показателей качества **********')
+
+    # --------------------------------------------------------------------------------------------------------------
+
+    # 'year_index' as the order of the year
+    work_table['year_index'] = range(1, len(work_table) + 1)[::-1]
+    # add intercept
+    work_table['intercept'] = 1
+
+    # print(work_table)
+
+    # modeling
+    freeCashFlow_model = sm.OLS(work_table['freeCashFlow'], work_table[['year_index', 'intercept']]).fit()
+
+    freeCashFlow_pred_lr = freeCashFlow_model.predict([19, 1])[0]  # Прогнозируем через 10 лет
+
+    freeCashFlow_pred_lr5 = freeCashFlow_model.predict([14, 1])[0]  # Прогнозируем через 5 лет
+    freeCashFlow_pred_lr4 = freeCashFlow_model.predict([13, 1])[0]
+    freeCashFlow_pred_lr3 = freeCashFlow_model.predict([12, 1])[0]
+    freeCashFlow_pred_lr2 = freeCashFlow_model.predict([11, 1])[0]
+    freeCashFlow_pred_lr1 = freeCashFlow_model.predict([10, 1])[0]
+
+    # CAGR FCF
+
+    CF_forecast = {}
+
+    CF_forecast['next_year1'] = {}
+    CF_forecast['next_year1']['freeCashFlow'] = freeCashFlow_pred_lr1
+
+    CF_forecast['next_year2'] = {}
+    CF_forecast['next_year2']['freeCashFlow'] = freeCashFlow_pred_lr2
+
+    CF_forecast['next_year3'] = {}
+    CF_forecast['next_year3']['freeCashFlow'] = freeCashFlow_pred_lr3
+
+    CF_forecast['next_year4'] = {}
+    CF_forecast['next_year4']['freeCashFlow'] = freeCashFlow_pred_lr4
+
+    CF_forecast['next_year5'] = {}
+    CF_forecast['next_year5']['freeCashFlow'] = freeCashFlow_pred_lr5
+
+    # print(CF_forecast)
+
+    print(f'freeCashFlow_pred_lr1 = {freeCashFlow_pred_lr1}')
+    print(f'freeCashFlow_pred_lr2 = {freeCashFlow_pred_lr2}')
+    print(f'freeCashFlow_pred_lr3 = {freeCashFlow_pred_lr3}')
+    print(f'freeCashFlow_pred_lr4 = {freeCashFlow_pred_lr4}')
+    print(f'freeCashFlow_pred_lr5 = {freeCashFlow_pred_lr5}')
+
+    print(freeCashFlow_pred_lr)
+
+    # ________________________________________  Расчет WACC  _______________________________________________
+
+
+    wacc_company = 0.08
+
+    CF_forec = pd.DataFrame.from_dict(CF_forecast, orient='columns')
+
+    FCF_List = CF_forec.iloc[0:].values.tolist()
+
+    npv = npf.npv(wacc_company, FCF_List[0])
+    print(f'npv = {npv}')
+
+    Terminal_value_Discounted = freeCashFlow_pred_lr * (1 + LTGrowth) / (LTdis - LTGrowth)
+
+    print(f'Terminal_value_Discounted = {Terminal_value_Discounted}')
+
+    sum_num = npv + Terminal_value_Discounted
+    print(f'sum_num = {sum_num}')
+
+    spl_num = sum_num / work_table['numberOfShares'][0]
+    print(f'Estimated price = {spl_num}')
+
+    difference_model_and_market_value = spl_num - PRICE
+    print(f'stock price = {PRICE}')
+
+    print(f'difference_model_and_market_value = {difference_model_and_market_value}')
+
+# ____________________Стоимость акции по дивам и балансовой стоимости(наивный метод)_____________________________
+
+    try:
+        dvd_avg = np.mean((work_table['Dividend per Share']).astype(float))  # Определим средний дивиденд
+        print(dvd_avg)
+    except:
+        dvd_avg = 0
+
+    # risk_free_rate = 0.0179
+    start = datetime.datetime(1999, 12, 31)
+    end = datetime.datetime.today().strftime('%Y-%m-%d')
+    Treasury = wb.DataReader(['DGS10'], 'fred', start, end)
+    RF = float(Treasury.iloc[-1])
+    risk_free_rate = RF / 100
+    # The discounted capital for the dividend of 3-year later
+    dvd_avg / (1 + risk_free_rate) ** 3
+    # The discounted capital for the dividend of 10-year later
+    # dvd_avg/(1+risk_free_rate)**10
+
+    dvd_total = 0
+    for j in range(1, 11):
+        dvd_total = dvd_total + dvd_avg / (1 + risk_free_rate) ** j
+    print(dvd_total)
+
+    growth_rate_of_10y = (work_table['bookValuePerShare'][0]) / (work_table['bookValuePerShare'][9])
+    avg_growth_rate = growth_rate_of_10y ** (1 / 10)
+    print(avg_growth_rate)
+
+    bvps_pred = (work_table['bookValuePerShare'][0]) * (avg_growth_rate ** 10)
+
+    print(work_table['bookValuePerShare'])
+
+    data_intrinsic = bvps_pred + dvd_total
+    print(data_intrinsic)
+
+    # data_intrinsic - latest_price  # Маржа безопасности
+
+    # 'year_index' as the order of the year
+    work_table['year_index'] = range(1, len(work_table) + 1)[::-1]
+    # add intercept
+    work_table['intercept'] = 1
+
+    print(work_table['year_index'])
+
+    # modeling
+    bvps_model = sm.OLS(work_table['bookValuePerShare'], work_table[['year_index', 'intercept']]).fit()
+
+    bvps_pred_lr = bvps_model.predict([19, 1])[0]  # Прогнозируем балансовую стоимость через 10 лет
+    print(f'bvps_pred_lr через 10 лет: {bvps_pred_lr}')
+
+    dvd_model = sm.OLS(work_table['Dividend per Share'][0:10].replace('', 0, regex=True).astype(float),
+                       work_table[['year_index', 'intercept']]).fit()
+
+    dvd_model.predict([19, 1])[0]  # Определить дивиденд через 10 лет
+
+    # Дивиденды за 10 лет
+    dvd_total_lr = 0
+    current_year_order = 9
+    for j in range(1, 11):
+        dvd_new = dvd_model.predict([current_year_order + j, 1])[0]
+        dvd_total_lr = dvd_total_lr + dvd_new / (1 + risk_free_rate) ** j
+    print(f'dvd_total_lr: {dvd_total_lr}')
+
+    aapl_intrinsic_lr = dvd_total_lr + bvps_pred_lr
+    print(f'aapl_intrinsic_lr: {aapl_intrinsic_lr}')
+
+    # ~~~~~~~~~~~~~~~~~~~~~  Оценка дисперсии модели линейной регресси дивов через R-Squared ~~~~~~~~~~~~~~~~~~~~~~~
+
+    # # creating OLS regression
+
+    r2_table = pd.DataFrame()
+    r2_table['y'] = work_table['Dividend per Share'][0:10].replace(np.nan, 0).replace('', 0, regex=True).astype(float)
+    r2_table['x'] = work_table['year_index']
+
+    slope, intercept, r_value, p_value, std_err = stats.linregress(r2_table['x'], r2_table['y'])
+
+
+    def linefitline(b):
+        return intercept + slope * b
+
+
+    # line1 = linefitline(r2_table['x'])
+    line1 = linefitline(r2_table['x'])
+
+    # plot line
+    # plt.scatter(r2_table['x'], r2_table['y'])
+    # plt.plot(r2_table['x'], line1, c='g')
+    # plt.show()
+
+
+    line2 = np.full(10, [r2_table['y'].mean()])
+    # plt.scatter(r2_table['x'], r2_table['y'])
+    # plt.plot(r2_table['x'], line2, c='r')
+    # plt.show()
+
+    differences_line1 = linefitline(r2_table['x']) - r2_table['y']
+    line1sum = 0
+    for k in differences_line1:
+        line1sum = line1sum + (k * k)
+
+    differences_line2 = line2 - r2_table['y']
+    line2sum = 0
+    for k in differences_line2:
+        line2sum = line2sum + (k * k)
+
+    r2 = r2_score(r2_table['y'], linefitline(r2_table['x']))
+    print('The rsquared value is: ' + str(r2))
+
+    # ~~~~~~~~~~~~~~~~~~~~~  Оценка дисперсии модели линейной регресси FCF через R-Squared ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    # # creating OLS regression
+
+
+    r2_table_FCF = pd.DataFrame()
+    r2_table_FCF['y'] = work_table['freeCashFlow'].replace(np.nan, 0).replace('', 0, regex=True)
+    r2_table_FCF['x'] = work_table['year_index']
+
+    slope, intercept, r_value, p_value, std_err = stats.linregress(r2_table_FCF['x'], r2_table_FCF['y'])
+
+
+    def linefitline(b):
+        return intercept + slope * b
+
+
+    # line1 = linefitline(r2_table['x'])
+    line1 = linefitline(r2_table_FCF['x'])
+
+    # plot line
+    # plt.scatter(r2_table_FCF['x'], r2_table_FCF['y'])
+    # plt.plot(r2_table_FCF['x'], line1, c='g')
+    # plt.show()
+
+    line2 = np.full(10, [r2_table_FCF['y'].mean()])
+    # plt.scatter(r2_table_FCF['x'], r2_table_FCF['y'])
+    # plt.plot(r2_table_FCF['x'], line2, c='r')
+    # plt.show()
+
+    differences_line1 = linefitline(r2_table_FCF['x']) - r2_table_FCF['y']
+    line1sum = 0
+    for k in differences_line1:
+        line1sum = line1sum + (k * k)
+
+    differences_line2 = line2 - r2_table_FCF['y']
+    line2sum = 0
+    for k in differences_line2:
+        line2sum = line2sum + (k * k)
+
+    r2_FCF = r2_score(r2_table_FCF['y'], linefitline(r2_table_FCF['x']))
+
+    # ~~~~~~~~~~~~~~~~~ ЗАПИСЬ В ТАБЛИЦУ ~~~~~~~~~~~~~~~~~
+
+    values = service.spreadsheets().values().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body={
+            "valueInputOption": "USER_ENTERED",
+            "data": [
+                {"range": f"{LIST}!B{i}:K{i}",
+                 "majorDimension": "ROWS",
+                 "values": [
+                     [f"{round((wacc_company * 100), 2)}", f"{round(Gordon, 2)}", f"{round(spl_num, 2)}",
+                      f"{round(PRICE[0], 2)}", f"{round(aapl_intrinsic_lr, 2)}", f"{sum(Total_rating)}",
+                      f"{round(r2, 3)}", f"{round(r2_FCF, 3)}", f"{round(ROE_DuPont, 3)}"
+                      ],
+                 ]},
+            ]
+        }
+    ).execute()
+    i += 1
+
+    # except KeyError:
+    #     values = service.spreadsheets().values().batchUpdate(
+    #         spreadsheetId=spreadsheet_id,
+    #         body={
+    #             "valueInputOption": "USER_ENTERED",
+    #             "data": [
+    #                 {"range": f"{LIST}!B{i}:G{i}",
+    #                  "majorDimension": "ROWS",
+    #                  "values": [
+    #                      [f"Ошибка тикера", f"Ошибка тикера", f"Ошибка тикера",
+    #                       f"Ошибка тикера", f"Ошибка тикера", f"Ошибка тикера"],
+    #                  ]},
+    #             ]
+    #         }
+    #     ).execute()
+    #     i += 1
+
