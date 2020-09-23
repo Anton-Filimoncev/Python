@@ -1,0 +1,29 @@
+import datetime as dt
+from pandas_datareader import data
+from datetime import  timedelta
+
+stocks = data.DataReader(name="NKE",data_source="yahoo", start=dt.datetime.now() - timedelta(days=365), end=dt.datetime.now())
+
+# print(stocks)
+# print(dt.datetime.now() - timedelta(days=365))
+
+curent_price = stocks['Close'][-1]
+yesterday_price = stocks['Close'][-2]
+last_year_price = stocks['Close'][0]
+
+# print(f'''curent_price = {stocks['Close'][-1]}''')
+# print(f'''yesterday_price = {stocks['Close'][-2]}''')
+# print(f'''last_year_price = {stocks['Close'][0]}''')
+
+delta_day = ((curent_price - yesterday_price) / yesterday_price) * 100
+delta_year = ((curent_price - last_year_price) / last_year_price) * 100
+
+print(f'''delta_day = {delta_day}''')
+print(f'''delta_year = {delta_year}''')
+
+if delta_year > 10 or delta_year < -10:
+    print("ALARM")
+
+if delta_day > 5 or delta_day < -5:
+    print("ALARM")
+
