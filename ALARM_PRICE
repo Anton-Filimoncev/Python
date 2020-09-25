@@ -98,4 +98,4 @@ while j > 0:
             continue
 
     print('Ждем следующий цикл')
-    sleep(22)
+    sleep(3600)
