@@ -1,29 +1,101 @@
+from time import sleep
+import httplib2
+import apiclient.discovery
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
+from datetime import datetime
 import datetime as dt
 from pandas_datareader import data
-from datetime import  timedelta
+from datetime import timedelta
 
-stocks = data.DataReader(name="NKE",data_source="yahoo", start=dt.datetime.now() - timedelta(days=365), end=dt.datetime.now())
 
-# print(stocks)
-# print(dt.datetime.now() - timedelta(days=365))
+# Файл, полученный в Google Developer Console
+CREDENTIALS_FILE = 'Seetzzz-1cb93f64d8d7.json'
+# ID Google Sheets документа (можно взять из его URL)
+spreadsheet_id = '1bfNJIgSEo9V5Jww1-EoUh_onba2bGY2LpDVx4aYlPzc'
+spreadsheet_id2 = '1A3leW6ZfsoVEPXZsv0Loj4eAbyKRchnHrJLdP4RIXDA'
 
-curent_price = stocks['Close'][-1]
-yesterday_price = stocks['Close'][-2]
-last_year_price = stocks['Close'][0]
+# Авторизуемся и получаем service — экземпляр доступа к API
+credentials = ServiceAccountCredentials.from_json_keyfile_name(
+    CREDENTIALS_FILE,
+    ['https://www.googleapis.com/auth/spreadsheets',
+     'https://www.googleapis.com/auth/drive'])
+httpAuth = credentials.authorize(httplib2.Http())
+service = apiclient.discovery.build('sheets', 'v4', http = httpAuth)
 
-# print(f'''curent_price = {stocks['Close'][-1]}''')
-# print(f'''yesterday_price = {stocks['Close'][-2]}''')
-# print(f'''last_year_price = {stocks['Close'][0]}''')
+# ____________________________Парсим тикеры !!!!С ТАБЛИЦЫ!!!! и работаем с ними _______________________________________
 
-delta_day = ((curent_price - yesterday_price) / yesterday_price) * 100
-delta_year = ((curent_price - last_year_price) / last_year_price) * 100
+# Чтения файла
+values = service.spreadsheets().values().get(
+    spreadsheetId=spreadsheet_id,
+    range='S&P_500!A1:L1000',   # Парсим только компании S&P_500!!!!
+    majorDimension='COLUMNS'
+).execute()
 
-print(f'''delta_day = {delta_day}''')
-print(f'''delta_year = {delta_year}''')
+# ticker_s = values['values'][0]
 
-if delta_year > 10 or delta_year < -10:
-    print("ALARM")
+check_data = []
 
-if delta_day > 5 or delta_day < -5:
-    print("ALARM")
 
+
+for ticker_s, tik, i in zip(values['values'][0][1:], values['values'][5], range(1, len(values['values'][5]))):
+    try:
+        if int(values['values'][5][i]) >= 7:
+            check_data.append(ticker_s)
+    except ValueError:
+        continue
+
+
+j = 10
+
+
+while j > 0:
+    i = 2
+    for company in check_data:
+        sleep(4)
+        try:
+            stocks = data.DataReader(name=company, data_source="yahoo", start=dt.datetime.now() - timedelta(days=365), end=dt.datetime.now())
+
+            # print(stocks)
+            # print(dt.datetime.now() - timedelta(days=365))
+
+            curent_price = stocks['Close'][-1]
+            yesterday_price = stocks['Close'][-2]
+            last_year_price = stocks['Close'][0]
+
+            # print(f'''curent_price = {stocks['Close'][-1]}''')
+            # print(f'''yesterday_price = {stocks['Close'][-2]}''')
+            # print(f'''last_year_price = {stocks['Close'][0]}''')
+
+            delta_day = ((curent_price - yesterday_price) / yesterday_price) * 100
+            delta_year = ((curent_price - last_year_price) / last_year_price) * 100
+
+            print(f'''{company} delta_day = {delta_day}''')
+
+            # __________запись в таблицу оповещений________________
+            # if delta_year > 10 or delta_year < -10:
+            #     print("ALARM")
+
+            if delta_day > 5 or delta_day < -5:
+                print(f"{company} = ALARM")
+
+                values = service.spreadsheets().values().batchUpdate(
+                    spreadsheetId=spreadsheet_id,
+                    body={
+                        "valueInputOption": "USER_ENTERED",
+                        "data": [
+                            {"range": f"ALARM_price!A{i}:C{i}",
+                             "majorDimension": "ROWS",
+                             "values": [
+                                 [f"{company}", f"{delta_day}"],
+                             ]},
+                        ]
+                    }
+                ).execute()
+                i += 1
+
+        except KeyError:
+            continue
+
+    print('Ждем следующий цикл')
+    sleep(22)
