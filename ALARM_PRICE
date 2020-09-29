@@ -48,6 +48,9 @@ for ticker_s, tik, i in zip(values['values'][0][1:], values['values'][5], range(
 
 j = 10
 
+data_company = []
+data_delta_day = []
+
 
 while j > 0:
     i = 2
@@ -56,46 +59,64 @@ while j > 0:
         try:
             stocks = data.DataReader(name=company, data_source="yahoo", start=dt.datetime.now() - timedelta(days=365), end=dt.datetime.now())
 
-            # print(stocks)
-            # print(dt.datetime.now() - timedelta(days=365))
-
             curent_price = stocks['Close'][-1]
             yesterday_price = stocks['Close'][-2]
             last_year_price = stocks['Close'][0]
-
-            # print(f'''curent_price = {stocks['Close'][-1]}''')
-            # print(f'''yesterday_price = {stocks['Close'][-2]}''')
-            # print(f'''last_year_price = {stocks['Close'][0]}''')
 
             delta_day = ((curent_price - yesterday_price) / yesterday_price) * 100
             delta_year = ((curent_price - last_year_price) / last_year_price) * 100
 
             print(f'''{company} delta_day = {delta_day}''')
 
-            # __________запись в таблицу оповещений________________
-            # if delta_year > 10 or delta_year < -10:
-            #     print("ALARM")
-
             if delta_day > 5 or delta_day < -5:
-                print(f"{company} = ALARM")
-
-                values = service.spreadsheets().values().batchUpdate(
-                    spreadsheetId=spreadsheet_id,
-                    body={
-                        "valueInputOption": "USER_ENTERED",
-                        "data": [
-                            {"range": f"ALARM_price!A{i}:C{i}",
-                             "majorDimension": "ROWS",
-                             "values": [
-                                 [f"{company}", f"{delta_day}"],
-                             ]},
-                        ]
-                    }
-                ).execute()
-                i += 1
+                data_company.append(company)
+                data_delta_day.append(delta_day)
 
         except KeyError:
             continue
 
+    # __________чистим таблицу________________
+    for rows in range(2, 30):
+        sleep(0.1)
+        # if delta_day > 5 or delta_day < -5:
+        #     print(f"{company} = ALARM")
+        values = service.spreadsheets().values().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={
+                "valueInputOption": "USER_ENTERED",
+                "data": [
+                    {"range": f"ALARM_price!A{rows}:C{rows}",
+                     "majorDimension": "ROWS",
+                     "values": [
+                         [f"", f""],
+                     ]},
+                ]
+            }
+        ).execute()
+        
+        
+    # Запись полученных данных в таблицу
+    
+    for comp, delt in zip(data_company, data_delta_day):
+        # if delta_day > 5 or delta_day < -5:
+        #     print(f"{company} = ALARM")
+        values = service.spreadsheets().values().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={
+                "valueInputOption": "USER_ENTERED",
+                "data": [
+                    {"range": f"ALARM_price!A{i}:C{i}",
+                     "majorDimension": "ROWS",
+                     "values": [
+                         [f"{comp}", f"{delt}"],
+                     ]},
+                ]
+            }
+        ).execute()
+        i += 1
+
     print('Ждем следующий цикл')
-    sleep(3600)
+    sleep(3)
+
+
+
