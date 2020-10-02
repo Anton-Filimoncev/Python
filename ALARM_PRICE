@@ -59,8 +59,8 @@ while j > 0:
         data_company = []
         data_delta_day = []
 
-        sleep(4)
         try:
+            sleep(2)
             stocks = data.DataReader(name=company, data_source="yahoo", start=dt.datetime.now() - timedelta(days=365), end=dt.datetime.now())
 
             curent_price = stocks['Close'][-1]
@@ -76,12 +76,12 @@ while j > 0:
                 data_company.append(company)
                 data_delta_day.append(delta_day)
 
-        except KeyError:
+        except:
             continue
 
     # __________чистим таблицу________________
     for rows in range(2, 30):
-        sleep(0.1)
+        sleep(0.2)
         # if delta_day > 5 or delta_day < -5:
         #     print(f"{company} = ALARM")
         values = service.spreadsheets().values().batchUpdate(
@@ -99,9 +99,11 @@ while j > 0:
         ).execute()
 
 
+
     # Запись полученных данных в таблицу
 
     for comp, delt in zip(data_company, data_delta_day):
+        sleep(0.2)
         # if delta_day > 5 or delta_day < -5:
         #     print(f"{company} = ALARM")
         values = service.spreadsheets().values().batchUpdate(
@@ -118,6 +120,23 @@ while j > 0:
             }
         ).execute()
         i += 1
+
+    if len(data_company) == 0:
+        values = service.spreadsheets().values().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={
+                "valueInputOption": "USER_ENTERED",
+                "data": [
+                    {"range": f"ALARM_price!A{2}:C{2}",
+                     "majorDimension": "ROWS",
+                     "values": [
+                         [f"Компаний с отклонением ", f"5% не обнаружено"],
+                     ]},
+                ]
+            }
+        ).execute()
+
+    print(f'Количество компаний с отклонением: {len(data_company)}')
 
     print('Ждем следующий цикл')
     sleep(3600)
