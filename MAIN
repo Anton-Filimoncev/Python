@@ -113,7 +113,7 @@ for company in tickers[1:]:
         PRICE = real_time_quote['price'].replace(np.nan, 0)[0]
         LTdis = 0.08
 
-        company_profile_beta = company_profile['beta']
+        company_profile_beta = company_profile['beta'].replace(np.nan, 0)
 
         Total_rating = []
 
