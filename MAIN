@@ -14,6 +14,7 @@ from scipy.stats.mstats import gmean
 import statsmodels.api as sm
 from scipy import stats
 import time
+from time import sleep
 
 
 
@@ -22,7 +23,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 KEY = '2105b9f242d47b69fc73f0f2205be048'
-LIST = 'Russell_1000'
+LIST = 'Russell_3000'
 
 # ~~~~~~~~~~~~~~~~~~~~ GOOGLE SHEETS ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -48,7 +49,7 @@ service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
 # Чтения файла
 values = service.spreadsheets().values().get(
     spreadsheetId=spreadsheet_id,
-    range=f'''{LIST}!A1:L1000''',
+    range=f'''{LIST}!A1:L10000''',
     majorDimension='COLUMNS'
 ).execute()
 
@@ -597,6 +598,56 @@ for company in tickers[1:]:
 
         r2_FCF = r2_score(r2_table_FCF['y'], linefitline(r2_table_FCF['x']))
 
+        # ___________________ Расчет стабильности выплат дивидендов___________
+
+        div_YELD = work_table['dividendYield'][0]
+
+        div_year_pay = 0
+        div_year_grow = 0
+
+        for i in range(0, 7):
+            if work_table['dividendYield'][i] != 0:
+                div_year_pay += 1
+            else:
+                break
+
+        for i in range(0, 7):
+            if work_table['dividendYield'][i + 1] < work_table['dividendYield'][i]:
+                div_year_grow += 1
+            else:
+                break
+
+        DSI = (div_year_pay + div_year_grow) / 14
+
+        # ___________________ Пиотроски F-score ______________
+
+        ROA_FS = (round(
+            work_table['netIncome'][0] / ((work_table['totalAssets'][0] + work_table['totalAssets'][1]) / 2),
+            2) > 0)  # >0
+        CFO_FS = int(work_table['operatingCashFlow'][0] > 0)
+        ROA_D_FS = int((round(
+            work_table['netIncome'][0] / ((work_table['totalAssets'][0] + work_table['totalAssets'][1]) / 2), 2)) >
+                       (round(work_table['netIncome'][1] / (
+                                   (work_table['totalAssets'][1] + work_table['totalAssets'][2]) / 2), 2)))
+        CFO_ROA_FS = int((cashflow_op / work_table['totalAssets'][0]) > (work_table['netIncome'][0] /
+                                                                         ((work_table['totalAssets'][0] +
+                                                                           work_table['totalAssets'][1]) / 2)))
+        CR_FS = int((work_table['totalAssets'][0] / work_table['totalLiabilities'][0]) >
+                    (work_table['totalAssets'][1] / work_table['totalLiabilities'][1]))
+        LTD_FS = int(work_table['longTermDebt'][0] <= work_table['longTermDebt'][1])
+        DILUTION_FS = int(work_table['numberOfShares'][0] <= work_table['numberOfShares'][1])
+        GM_FS = int(work_table['grossProfit'][0] / work_table['revenue'][0] > work_table['grossProfit'][1] /
+                    work_table['revenue'][1])
+        ATO_FS = int((work_table['revenue'][0] / ((work_table['totalAssets'][0] + work_table['totalAssets'][1]) / 2)) >
+                     (work_table['revenue'][1] / ((work_table['totalAssets'][1] + work_table['totalAssets'][2] / 2))))
+        F_score = ROA_FS + CFO_FS + ROA_D_FS + CFO_ROA_FS + LTD_FS + CR_FS + DILUTION_FS + GM_FS + ATO_FS
+
+
+        Aggregate_score = F_score * DSI
+
+        print(f'DSI is {DSI}')
+        print(f'f_score_table is {F_score}')
+        print(f'Aggregate_score is {Aggregate_score}')
 
 
         # ~~~~~~~~~~~~~~~~~ ЗАПИСЬ В ТАБЛИЦУ ~~~~~~~~~~~~~~~~~
@@ -606,12 +657,12 @@ for company in tickers[1:]:
             body={
                 "valueInputOption": "USER_ENTERED",
                 "data": [
-                    {"range": f"{LIST}!B{i}:K{i}",
+                    {"range": f"{LIST}!B{i}:L{i}",
                      "majorDimension": "ROWS",
                      "values": [
-                         [f"{round((wacc_company * 100), 2)}", f"{round(Gordon, 2)}", f"{round(spl_num, 2)}",
+                         [f"{round((wacc_company * 100), 2)}", f"{round(spl_num, 2)}",
                           f"{round(PRICE, 2)}", f"{round(aapl_intrinsic_lr, 2)}", f"{sum(Total_rating)}",
-                          f"{round(r2, 3)}", f"{round(r2_FCF, 3)}", f"{round(ROE_DuPont, 3)}"
+                          f"{round(r2, 3)}", f"{round(r2_FCF, 3)}", f"{DSI}", f"{F_score}", f"{Aggregate_score}",
                           ],
                      ]},
                 ]
@@ -622,6 +673,7 @@ for company in tickers[1:]:
 
 
     except KeyError:
+        sleep(1)
         values = service.spreadsheets().values().batchUpdate(
             spreadsheetId=spreadsheet_id,
             body={
