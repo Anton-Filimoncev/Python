@@ -25,6 +25,9 @@ from scipy import stats
 KEY = '2105b9f242d47b69fc73f0f2205be048'
 LIST = 'Russell_3000'
 
+# S&P_500
+# Russell_3000
+
 # ~~~~~~~~~~~~~~~~~~~~ GOOGLE SHEETS ~~~~~~~~~~~~~~~~~~~~~~~~
 
 
