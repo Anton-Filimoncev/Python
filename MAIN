@@ -96,16 +96,19 @@ for company in tickers[1:]:
         work_table = pd.concat(
             (income_statement[['date', 'revenue', 'operatingIncome', 'netIncome', 'eps', 'ebitda',
                                'depreciationAndAmortization', 'interestExpense', 'incomeBeforeTax',
-                               'incomeTaxExpense']].replace(np.nan, 0)[0:10],
+                               'incomeTaxExpense', 'researchAndDevelopmentExpenses', 'generalAndAdministrativeExpenses',
+                               'sellingAndMarketingExpenses', 'otherExpenses', 'operatingExpenses', 'costAndExpenses',
+                               'grossProfit', ]].replace(np.nan, 0)[0:10],
              balance[['totalAssets', 'totalLiabilities', 'totalStockholdersEquity',
-                      'totalDebt', 'netDebt']].replace(np.nan, 0)[0:10],
-             ratios[['dividendPayoutRatio', 'dividendYield', 'effectiveTaxRate', 'payoutRatio']].replace(
+                      'totalDebt', 'netDebt', 'longTermDebt']].replace(np.nan, 0)[0:10],
+             ratios[
+                 ['dividendPayoutRatio', 'dividendYield', 'effectiveTaxRate', 'payoutRatio', 'returnOnAssets']].replace(
                  np.nan, 0)[0:10],
-             cash_flow[['freeCashFlow', 'dividendsPaid']].replace(np.nan, 0)[0:10],
+             cash_flow[['freeCashFlow', 'dividendsPaid', 'operatingCashFlow']].replace(np.nan, 0)[0:10],
              enterprise_value[['numberOfShares', 'stockPrice']].replace(np.nan, 0)[0:10],
              key_metrics[['debtToEquity', 'bookValuePerShare', 'roe', 'currentRatio']].replace(np.nan,
                                                                                                0)[0:10],
-             financial_income_statement['Dividend per Share'].replace(np.nan, 0)[0:10],
+             financial_income_statement[['Dividend per Share', 'Gross Margin']].replace(np.nan, 0)[0:10],
              company_profile['mktCap'].replace(np.nan, 0)[0:10]
 
              ), axis=1)
@@ -598,28 +601,28 @@ for company in tickers[1:]:
 
         r2_FCF = r2_score(r2_table_FCF['y'], linefitline(r2_table_FCF['x']))
 
-        # ___________________ Расчет стабильности выплат дивидендов___________
+        #______________ Расчет стабильности выплат дивидендов ________________________
 
         div_YELD = work_table['dividendYield'][0]
 
         div_year_pay = 0
         div_year_grow = 0
 
-        for i in range(0, 7):
-            if work_table['dividendYield'][i] != 0:
+        for year_pay in range(0, 7):
+            if work_table['dividendYield'][year_pay] != 0:
                 div_year_pay += 1
             else:
                 break
 
-        for i in range(0, 7):
-            if work_table['dividendYield'][i + 1] < work_table['dividendYield'][i]:
+        for year_grow in range(0, 7):
+            if work_table['dividendYield'][year_grow + 1] < work_table['dividendYield'][year_grow]:
                 div_year_grow += 1
             else:
                 break
 
         DSI = (div_year_pay + div_year_grow) / 14
 
-        # ___________________ Пиотроски F-score ______________
+        #_______________________Пиотроски F-score______________________________________
 
         ROA_FS = (round(
             work_table['netIncome'][0] / ((work_table['totalAssets'][0] + work_table['totalAssets'][1]) / 2),
@@ -629,7 +632,7 @@ for company in tickers[1:]:
             work_table['netIncome'][0] / ((work_table['totalAssets'][0] + work_table['totalAssets'][1]) / 2), 2)) >
                        (round(work_table['netIncome'][1] / (
                                    (work_table['totalAssets'][1] + work_table['totalAssets'][2]) / 2), 2)))
-        CFO_ROA_FS = int((cashflow_op / work_table['totalAssets'][0]) > (work_table['netIncome'][0] /
+        CFO_ROA_FS = int((work_table['operatingCashFlow'][0] / work_table['totalAssets'][0]) > (work_table['netIncome'][0] /
                                                                          ((work_table['totalAssets'][0] +
                                                                            work_table['totalAssets'][1]) / 2)))
         CR_FS = int((work_table['totalAssets'][0] / work_table['totalLiabilities'][0]) >
@@ -640,8 +643,8 @@ for company in tickers[1:]:
                     work_table['revenue'][1])
         ATO_FS = int((work_table['revenue'][0] / ((work_table['totalAssets'][0] + work_table['totalAssets'][1]) / 2)) >
                      (work_table['revenue'][1] / ((work_table['totalAssets'][1] + work_table['totalAssets'][2] / 2))))
-        F_score = ROA_FS + CFO_FS + ROA_D_FS + CFO_ROA_FS + LTD_FS + CR_FS + DILUTION_FS + GM_FS + ATO_FS
 
+        F_score = ROA_FS + CFO_FS + ROA_D_FS + CFO_ROA_FS + LTD_FS + CR_FS + DILUTION_FS + GM_FS + ATO_FS
 
         Aggregate_score = F_score * DSI
 
@@ -662,13 +665,15 @@ for company in tickers[1:]:
                      "values": [
                          [f"{round((wacc_company * 100), 2)}", f"{round(spl_num, 2)}",
                           f"{round(PRICE, 2)}", f"{round(aapl_intrinsic_lr, 2)}", f"{sum(Total_rating)}",
-                          f"{round(r2, 3)}", f"{round(r2_FCF, 3)}", f"{DSI}", f"{F_score}", f"{Aggregate_score}",
+                          f"{round(r2, 3)}", f"{round(r2_FCF, 3)}", f"{round(DSI, 3)}", f"{F_score}",
+                          f"{round(Aggregate_score, 2)}"
                           ],
                      ]},
                 ]
             }
         ).execute()
         i += 1
+
 
 
 
