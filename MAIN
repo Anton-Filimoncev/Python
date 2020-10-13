@@ -663,13 +663,12 @@ for company in tickers[1:]:
             body={
                 "valueInputOption": "USER_ENTERED",
                 "data": [
-                    {"range": f"{LIST}!B{i}:L{i}",
+                    {"range": f"{LIST}!B{i}:J{i}",
                      "majorDimension": "ROWS",
                      "values": [
                          [f"{round((wacc_company * 100), 2)}", f"{round(spl_num, 2)}",
                           f"{round(PRICE, 2)}", f"{round(aapl_intrinsic_lr, 2)}", f"{sum(Total_rating)}",
-                          f"{round(r2, 3)}", f"{round(r2_FCF, 3)}", f"{round(DSI, 3)}", f"{F_score}",
-                          f"{round(Aggregate_score, 2)}"
+                          f"{round(DSI, 3)}", f"{F_score}", f"{round(Aggregate_score, 2)}"
                           ],
                      ]},
                 ]
