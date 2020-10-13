@@ -1,0 +1,97 @@
+import telebot
+from time import sleep
+import httplib2
+import apiclient.discovery
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
+from datetime import datetime, timedelta, time, date
+import datetime as dt
+from pandas_datareader import data
+from datetime import timedelta
+
+bot = telebot.TeleBot("1181494480:AAFflsDcgeCaybbGnS3qA445LZscwzfhEUM")
+
+# Файл, полученный в Google Developer Console
+CREDENTIALS_FILE = 'Seetzzz-1cb93f64d8d7.json'
+# ID Google Sheets документа (можно взять из его URL)
+spreadsheet_id = '1bfNJIgSEo9V5Jww1-EoUh_onba2bGY2LpDVx4aYlPzc'
+spreadsheet_id2 = '1A3leW6ZfsoVEPXZsv0Loj4eAbyKRchnHrJLdP4RIXDA'
+
+# Авторизуемся и получаем service — экземпляр доступа к API
+credentials = ServiceAccountCredentials.from_json_keyfile_name(
+	CREDENTIALS_FILE,
+	['https://www.googleapis.com/auth/spreadsheets',
+	 'https://www.googleapis.com/auth/drive'])
+httpAuth = credentials.authorize(httplib2.Http())
+service = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+
+# ____________________________Парсим тикеры !!!!С ТАБЛИЦЫ!!!! и работаем с ними _______________________________________
+
+# Чтения файла
+values = service.spreadsheets().values().get(
+	spreadsheetId=spreadsheet_id,
+	range='S&P_500!A1:L1000',  # Парсим только компании S&P_500!!!!
+	majorDimension='COLUMNS'
+).execute()
+
+# ticker_s = values['values'][0]
+
+check_data = []
+
+for ticker_s, tik, i in zip(values['values'][0][1:], values['values'][5], range(1, len(values['values'][5]))):
+	try:
+		if int(values['values'][5][i]) >= 7:
+			check_data.append(ticker_s)
+	except ValueError:
+		continue
+
+j = 10
+
+scheduled_time = time(hour=13, minute=7, second=0)  # время отправки сообшщения и запуска скрипта
+
+@bot.message_handler(func=lambda message: True, content_types=['text'])
+def echo_msg(message):
+	while j > 0:
+		i = 2
+		for company in check_data:
+
+			data_company = []
+			data_delta_day = []
+
+			try:
+				sleep(2)
+				stocks = data.DataReader(name=company, data_source="yahoo",
+										 start=dt.datetime.now() - timedelta(days=365), end=dt.datetime.now())
+
+				curent_price = stocks['Close'][-1]
+				yesterday_price = stocks['Close'][-2]
+				last_year_price = stocks['Close'][0]
+
+				delta_day = ((curent_price - yesterday_price) / yesterday_price) * 100
+				delta_year = ((curent_price - last_year_price) / last_year_price) * 100
+
+				print(f'''{company} delta_day = {delta_day}''')
+
+				if delta_day > 5 or delta_day < -5:
+					data_company.append(company)
+					data_delta_day.append(delta_day)
+
+			except:
+				continue
+
+		for comp, delt in zip(data_company, data_delta_day):
+			sleep(0.2)
+			if delta_day > 5 or delta_day < -5:
+				bot.send_message(message.chat.id, f"Компания {comp} имеет отклонение {delt}")
+
+		if len(data_company) == 0:
+			bot.send_message(message.chat.id, "Компаний с отклонением более или менее 5% не обнаружено")
+
+
+		# Время следующего старта будет назначено на запланированное время следующих суток
+		next_loop_start = datetime.combine(date.today() + timedelta(days=1), scheduled_time)
+		delay = (next_loop_start - datetime.now()).seconds
+		sleep(delay)
+
+if __name__ == '__main__':
+	bot.polling(none_stop=True)
