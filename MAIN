@@ -85,12 +85,13 @@ for company in tickers[1:]:
             f'https://financialmodelingprep.com/api/v3/financial-statement-full-as-reported/{company}?apikey={KEY}').json()
         KM = requests.get(f'https://financialmodelingprep.com/api/v3/key-metrics/{company}?apikey={KEY}').json()
         CF_TTM = requests.get(f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{COMPANY}?period=quarter&apikey={KEY}').json()
-
+        BL_TTM = requests.get(f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{COMPANY}?period=quarter&apikey={KEY}').json()
 
 
         financial_income_statement = pd.DataFrame(FIS['financials'])
         income_statement = pd.DataFrame(IS)
         balance = pd.DataFrame(BL)
+        balance_TTM = pd.DataFrame(BL_TTM)
         ratios = pd.DataFrame(RT)
         cash_flow = pd.DataFrame(CF)
         cash_flow_TTM = pd.DataFrame(CF_TTM)
@@ -109,7 +110,15 @@ for company in tickers[1:]:
         cash_flow_statement = cash_flow[::-1].append(ttm_cash_flow_statement.rename('TTM')).drop(['netIncome'], axis=1)
         final_cash_flow_statement = cash_flow_statement[::-1].reset_index(drop=True)
         # cash_flow - указать в рабочей таблице, что бы венуться к значениям без TTM
+    #++++++++++++++++++++++++++++++++++++++++++++++++ Учет кэша с долгом ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+        balance_TTM = pd.DataFrame(BL_TTM).iloc[:4]
+
+        totalDebt_TTM = balance_TTM['totalDebt'][0]
+        cash_TTM = balance_TTM['cashAndShortTermInvestments'][0]
+
+        print("Total Debt: ", totalDebt_TTM)
+        print("Cash and ST Investments: ", cash_TTM) 
 
         work_table = pd.concat(
             (income_statement[['date', 'revenue', 'operatingIncome', 'netIncome', 'eps', 'ebitda',
