@@ -84,17 +84,32 @@ for company in tickers[1:]:
         FS = requests.get(
             f'https://financialmodelingprep.com/api/v3/financial-statement-full-as-reported/{company}?apikey={KEY}').json()
         KM = requests.get(f'https://financialmodelingprep.com/api/v3/key-metrics/{company}?apikey={KEY}').json()
+        CF_TTM = requests.get(f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{COMPANY}?period=quarter&apikey={KEY}').json()
+
+
 
         financial_income_statement = pd.DataFrame(FIS['financials'])
         income_statement = pd.DataFrame(IS)
         balance = pd.DataFrame(BL)
         ratios = pd.DataFrame(RT)
         cash_flow = pd.DataFrame(CF)
+        cash_flow_TTM = pd.DataFrame(CF_TTM)
         enterprise_value = pd.DataFrame(EV)
         company_profile = pd.DataFrame(PF)
         real_time_quote = pd.DataFrame(CQ)
         financial_statement = pd.DataFrame(FS)
         key_metrics = pd.DataFrame(KM)
+
+    # Добавление CF за последние 4 месяца TTF
+    
+        q_cash_flow_statement = cash_flow_TTM.set_index('date').iloc[:4]
+        q_cash_flow_statement = cash_flow_TTM.apply(pd.to_numeric, errors='coerce')
+        ttm_cash_flow_statement = cash_flow_TTM[0:4].sum() # sum up last 4 quarters to get TTM cash flow
+
+        cash_flow_statement = cash_flow[::-1].append(ttm_cash_flow_statement.rename('TTM')).drop(['netIncome'], axis=1)
+        final_cash_flow_statement = cash_flow_statement[::-1].reset_index(drop=True)
+        # cash_flow - указать в рабочей таблице, что бы венуться к значениям без TTM
+
 
         work_table = pd.concat(
             (income_statement[['date', 'revenue', 'operatingIncome', 'netIncome', 'eps', 'ebitda',
@@ -107,7 +122,7 @@ for company in tickers[1:]:
              ratios[
                  ['dividendPayoutRatio', 'dividendYield', 'effectiveTaxRate', 'payoutRatio', 'returnOnAssets']].replace(
                  np.nan, 0)[0:10],
-             cash_flow[['freeCashFlow', 'dividendsPaid', 'operatingCashFlow']].replace(np.nan, 0)[0:10],
+             final_cash_flow_statement[['freeCashFlow', 'dividendsPaid', 'operatingCashFlow']].replace(np.nan, 0)[0:10],
              enterprise_value[['numberOfShares', 'stockPrice']].replace(np.nan, 0)[0:10],
              key_metrics[['debtToEquity', 'bookValuePerShare', 'roe', 'currentRatio']].replace(np.nan,
                                                                                                0)[0:10],
