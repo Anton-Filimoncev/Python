@@ -465,7 +465,7 @@ for company in tickers[1:]:
 
         print(f'Terminal_value_Discounted = {Terminal_value_Discounted}')
 
-        sum_num = npv + Terminal_value_Discounted
+        sum_num = npv + Terminal_value_Discounted + cash_TTM - totalDebt_TTM # добавлен кеш и вычесть долг за последний месяц
         print(f'sum_num = {sum_num}')
 
         spl_num = sum_num / work_table['numberOfShares'][0]
