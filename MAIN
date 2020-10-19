@@ -136,7 +136,7 @@ for company in tickers[1:]:
              key_metrics[['debtToEquity', 'bookValuePerShare', 'roe', 'currentRatio']].replace(np.nan,
                                                                                                0)[0:10],
              financial_income_statement[['Dividend per Share', 'Gross Margin']].replace(np.nan, 0)[0:10],
-             company_profile['mktCap'].replace(np.nan, 0)[0:10]
+             company_profile[['mktCap', 'sector']].replace(np.nan, 0)[0:10]
 
              ), axis=1)
 
@@ -188,20 +188,99 @@ for company in tickers[1:]:
 
         Total_rating.append(use_of_profit_rating)
 
+        #_____________________________________________Считаем среднюю маржу по сектору __________________________________
+
+        sectors = ['Technology', 'Consumer Cyclical', 'Industrials', 'Basic Materials', 'Communication Services',
+                   'Consumer Defensive', 'Healthcare', 'Real Estate', 'Utilities', 'Financial', 'Services']
+
+        exchange = 'NASDAQ'
+        marketcapmorethan = '1000000000' 
+        number_of_companies = 10 # количество компаний для среднего показателя по сектору
+        symbols = []
+        overview_Nasdaq = {}
+
+        ### 1 - request list of tickers for each industry
+        for sector in sectors:
+            symbols = []
+            gross_Margin_sector = []
+            operating_Margin_sector = []
+            net_Profit_Margin_sector = []
+            overview_Nasdaq[sector] = {}
+            n = 0  
+            screener = requests.get(
+                f'https://financialmodelingprep.com/api/v3/stock-screener?{marketcapmorethan}=1000000000&volumeMoreThan=10000&sector={sector}&exchange={exchange}&limit={number_of_companies}&apikey={KEY}').json()
+            for item in screener:
+                symbols.append(item['symbol'])
+
+            ### 2 extract Income Statement for each of the companies
+            for company in symbols:
+                gross_Margin_ten_year = []
+                operating_Margin_ten_year = []
+                net_Profit_Margin_ten_year = []
+                try:
+                    n = n + 1
+                    IS = requests.get(
+                        f'https://financialmodelingprep.com/api/v3/income-statement/{company}?apikey={KEY}').json()
+
+                    ### 3 compute margin ratios and append to list
+                    for year_median in range(0, 9):
+                        gross_Margin_ten_year.append(IS[year_median]['grossProfit'] / IS[year_median]['revenue'])
+                        operating_Margin_ten_year.append(IS[year_median]['operatingIncome'] / IS[year_median]['revenue'])
+                        net_Profit_Margin_ten_year.append(IS[year_median]['netIncome'] / IS[year_median]['revenue'])
+
+                    gross_Margin_sector.append(np.mean(gross_Margin_ten_year))
+                    operating_Margin_sector.append(np.mean(operating_Margin_ten_year))
+                    net_Profit_Margin_sector.append(np.mean(net_Profit_Margin_ten_year))
+
+                # NP to be able to calculate mean
+                except:
+                    pass
+            gross_Margin_sector = np.array(gross_Margin_sector)
+            gross_Margin_sector = np.median(gross_Margin_sector)
+
+            operating_Margin_sector = np.array(operating_Margin_sector)
+            operating_Margin_sector = np.median(operating_Margin_sector)
+
+            net_Profit_Margin_sector = np.array(net_Profit_Margin_sector)
+            net_Profit_Margin_sector = np.median(net_Profit_Margin_sector)
+
+            ### 4 - Add Ratios to a Dictionary and Convert to Pandas
+
+            overview_Nasdaq[sector]['Num. Companies'] = n
+            overview_Nasdaq[sector]['Gross Margin'] = gross_Margin_sector * 100
+            overview_Nasdaq[sector]['Operating Margin'] = operating_Margin_sector * 100
+            overview_Nasdaq[sector]['Net Profit Margin'] = net_Profit_Margin_sector * 100
+
+        median_by_Industry = pd.DataFrame.from_dict(overview_Nasdaq, orient='columns')
+
+        # Считаем маржу Валовой прибыли_________________________________________________________________
+
+        GROSS_MAR = work_table['grossProfit']/work_table['revenue']
+
+        gross_margin = round(np.mean(GROSS_MAR[0:]), 2) * 100
+
+        print(f'gross_margin {gross_margin}')
+
+        if gross_margin > overview_Nasdaq[sector_company[0]]['Gross Margin'] + 3:
+            gross_margin_rating = 1
+        elif gross_margin < overview_Nasdaq[sector_company[0]]['Gross Margin'] - 3:
+            gross_margin_rating = -1
+
+        Total_rating.append(gross_margin_rating)
+
+
         # Считаем Операционную маржу_________________________________________________________________
 
-        OPERATING_MAR = work_table['operatingIncome'] / work_table['revenue']
+        OPERATING_MAR = work_table['operatingIncome']/work_table['revenue']
 
-        operating_margin = round(np.mean(OPERATING_MAR[0:]), 2)
+        operating_margin = round(np.mean(OPERATING_MAR[0:]), 2) * 100
 
         print(f'operating_margin {operating_margin}')
 
-        if operating_margin < 0.06:
-            operating_margin_rating = -2
-        elif 0.14 > operating_margin > 0.06:
-            operating_margin_rating = 0
-        else:
-            operating_margin_rating = 2
+        if operating_margin > overview_Nasdaq[sector_company[0]]['Operating Margin'] + 3:
+            operating_margin_rating = 1
+        elif operating_margin < overview_Nasdaq[sector_company[0]]['Operating Margin'] - 3:
+            operating_margin_rating = -1
 
         Total_rating.append(operating_margin_rating)
 
@@ -220,24 +299,23 @@ for company in tickers[1:]:
 
         # Считаем Маржу чистой прибыли_________________________________________________________________
 
-        NET_PROFIT_MAR = work_table['netIncome'] / work_table['revenue']
+        NET_PROFIT_MAR = work_table['netIncome']/work_table['revenue']
 
         net_profit_margin = round(np.mean(NET_PROFIT_MAR[0:]), 2)
 
         print(f'net_profit_margin {net_profit_margin}')
 
-        if net_profit_margin < 0.06:
-            net_profit_margin_rating = -2
-        elif 0.1 > net_profit_margin > 0.06:
-            net_profit_margin_rating = 0
-        else:
-            net_profit_margin_rating = 2
+
+        if net_profit_margin > overview_Nasdaq[sector_company[0]]['Net Profit Margin'] + 3:
+            net_profit_margin_rating = 1
+        elif net_profit_margin < overview_Nasdaq[sector_company[0]]['Net Profit Margin'] - 3:
+            net_profit_margin_rating = -1
 
         Total_rating.append(net_profit_margin_rating)
 
         # Считаем Динамику маржи чистой прибыли_________________________________________________________________
 
-        if NET_PROFIT_MAR.std() < 0.1:
+        if NET_PROFIT_MAR.std() < 0.1 :
             net_profit_margin_dynamics = 'Рост'
             net_profit_margin_dynamics_rating = 1
         else:
@@ -250,8 +328,11 @@ for company in tickers[1:]:
 
         # Считаем Рост EPS_________________________________________________________________
 
-        EPS_growth = round((((work_table['eps'][0] / work_table['eps'][9]) ** 0.1) - 1),
-                           2)  # Первый вариант, eps - берем из API
+        EPS_growth = round((((work_table['eps'][0]/work_table['eps'][9]) ** 0.1) -1), 2)   # Первый вариант, eps - берем из API
+
+        # EPS_growth = round((((SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]) ** 0.1) -1), 2)  # Второй вариант, eps = totalAssets - totalLiabilities
+
+        #  !!!!!!!!!!!!!!!!!При разных вариантах разные значения!!!!!!!!!!!!!!!!!!!!!!
 
         print(f'EPS_growth {EPS_growth}')
 
@@ -266,7 +347,7 @@ for company in tickers[1:]:
 
         # Считаем Уровень долга_________________________________________________________________
 
-        debt_level = round(np.mean(work_table['totalLiabilities'] / work_table['totalAssets']), 2)
+        debt_level = round(np.mean(work_table['totalLiabilities']/work_table['totalAssets']), 2)
 
         print(f'debt_level {debt_level}')
 
