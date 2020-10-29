@@ -70,7 +70,7 @@ sectors = ['Technology', 'Consumer Cyclical', 'Industrials', 'Basic Materials', 
 
 exchange = 'NASDAQ'
 marketcapmorethan = '1000000000'
-number_of_companies = 1  # количество компаний для среднего показателя по сектору по факту в два раза больше
+number_of_companies = 100  # количество компаний для среднего показателя по сектору по факту в два раза больше
 
 # symbols_all = []
 overview_Nasdaq = {}
