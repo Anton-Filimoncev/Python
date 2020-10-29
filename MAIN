@@ -16,8 +16,6 @@ from scipy import stats
 import time
 from time import sleep
 
-
-
 from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
 from scipy import stats
@@ -65,15 +63,14 @@ for ticker in tickers[1:]:
 
 i = 2
 
-#_____________________________________________Считаем среднюю маржу по сектору __________________________________
+# _____________________________________________Считаем среднюю маржу по сектору __________________________________
 
 sectors = ['Technology', 'Consumer Cyclical', 'Industrials', 'Basic Materials', 'Communication Services',
            'Consumer Defensive', 'Healthcare', 'Real Estate', 'Utilities', 'Financial Services', 'Services', 'Energy']
 
 exchange = 'NASDAQ'
-marketcapmorethan = '1000000000' 
-number_of_companies = 1 # количество компаний для среднего показателя по сектору по факту в два раза больше
-
+marketcapmorethan = '1000000000'
+number_of_companies = 1  # количество компаний для среднего показателя по сектору по факту в два раза больше
 
 # symbols_all = []
 overview_Nasdaq = {}
@@ -82,27 +79,25 @@ symbols_all = {}
 for sector in sectors:
     gross_Margin_sector = []
     operating_Margin_sector = []
-    net_Profit_Margin_sector = [] 
-#     symbols_NASDAQ = []
-#     symbols_NYSE = []
+    net_Profit_Margin_sector = []
+    #     symbols_NASDAQ = []
+    #     symbols_NYSE = []
     symbols = []
     symbols_all[sector] = {}
     overview_Nasdaq[sector] = {}
-    n = 0  
+    n = 0
     screener = requests.get(
         f'https://financialmodelingprep.com/api/v3/stock-screener?{marketcapmorethan}=1000000000&volumeMoreThan=10000&sector={sector}&exchange={exchange}&limit={number_of_companies}&apikey={KEY}').json()
     for item in screener:
         symbols.append(item['symbol'])
-        
-    
+
     screener_NY = requests.get(
         f'https://financialmodelingprep.com/api/v3/stock-screener?{marketcapmorethan}=1000000000&volumeMoreThan=10000&sector={sector}&exchange=NYSE&limit={number_of_companies}&apikey={KEY}').json()
     for item_NY in screener_NY:
         symbols.append(item_NY['symbol'])
-        
-        
+
     for company in symbols:
-    
+
         gross_Margin_ten_year = []
         operating_Margin_ten_year = []
         net_Profit_Margin_ten_year = []
@@ -122,14 +117,14 @@ for sector in sectors:
             net_Profit_Margin_sector.append(np.mean(net_Profit_Margin_ten_year) * 100)
         except:
             pass
-        
-#     print(gross_Margin_sector)
-    symbols_all[sector] = symbols    
+
+    #     print(gross_Margin_sector)
+    symbols_all[sector] = symbols
     overview_Nasdaq[sector]['Gross Margin'] = gross_Margin_sector
     overview_Nasdaq[sector]['Operating Margin'] = operating_Margin_sector
     overview_Nasdaq[sector]['Net Profit Margin'] = net_Profit_Margin_sector
 
-#_________________________________________   ОСНОВНОЙ ЦИКЛ, ПЕРЕБОР КОМПАНИЙ _________________________________________________________________
+# _________________________________________   ОСНОВНОЙ ЦИКЛ, ПЕРЕБОР КОМПАНИЙ _________________________________________
 
 for company in tickers[1:]:
     time.sleep(0.5)  # Задержка для гугл таблиц
@@ -141,7 +136,8 @@ for company in tickers[1:]:
         IS = requests.get(f'https://financialmodelingprep.com/api/v3/income-statement/{company}?apikey={KEY}').json()
         FIS = requests.get(
             f'https://financialmodelingprep.com/api/v3/financials/income-statement/{company}?apikey={KEY}').json()
-        BL = requests.get(f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{company}?apikey={KEY}').json()
+        BL = requests.get(
+            f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{company}?apikey={KEY}').json()
         RT = requests.get(f'https://financialmodelingprep.com/api/v3/ratios/{company}?apikey={KEY}').json()
         CF = requests.get(f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{company}?apikey={KEY}').json()
         EV = requests.get(f'https://financialmodelingprep.com/api/v3/enterprise-values/{company}?apikey={KEY}').json()
@@ -150,9 +146,10 @@ for company in tickers[1:]:
         FS = requests.get(
             f'https://financialmodelingprep.com/api/v3/financial-statement-full-as-reported/{company}?apikey={KEY}').json()
         KM = requests.get(f'https://financialmodelingprep.com/api/v3/key-metrics/{company}?apikey={KEY}').json()
-        CF_TTM = requests.get(f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{COMPANY}?period=quarter&apikey={KEY}').json()
-        BL_TTM = requests.get(f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{COMPANY}?period=quarter&apikey={KEY}').json()
-
+        CF_TTM = requests.get(
+            f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{company}?period=quarter&apikey={KEY}').json()
+        BL_TTM = requests.get(
+            f'https://financialmodelingprep.com/api/v3/balance-sheet-statement/{company}?period=quarter&apikey={KEY}').json()
 
         financial_income_statement = pd.DataFrame(FIS['financials'])
         income_statement = pd.DataFrame(IS)
@@ -167,16 +164,16 @@ for company in tickers[1:]:
         financial_statement = pd.DataFrame(FS)
         key_metrics = pd.DataFrame(KM)
 
-    # Добавление CF за последние 4 месяца TTF
-    
+        # Добавление CF за последние 4 месяца TTF
+
         q_cash_flow_statement = cash_flow_TTM.set_index('date').iloc[:4]
         q_cash_flow_statement = cash_flow_TTM.apply(pd.to_numeric, errors='coerce')
-        ttm_cash_flow_statement = cash_flow_TTM[0:4].sum() # sum up last 4 quarters to get TTM cash flow
+        ttm_cash_flow_statement = cash_flow_TTM[0:4].sum()  # sum up last 4 quarters to get TTM cash flow
 
         cash_flow_statement = cash_flow[::-1].append(ttm_cash_flow_statement.rename('TTM')).drop(['netIncome'], axis=1)
         final_cash_flow_statement = cash_flow_statement[::-1].reset_index(drop=True)
         # cash_flow - указать в рабочей таблице, что бы венуться к значениям без TTM
-    #++++++++++++++++++++++++++++++++++++++++++++++++ Учет кэша с долгом ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # ++++++++++++++++++++++++++++++++++++++++++ Учет кэша с долгом +++++++++++++++++++++++++++++++++++++++++++++++
 
         balance_TTM = pd.DataFrame(BL_TTM).iloc[:4]
 
@@ -184,7 +181,7 @@ for company in tickers[1:]:
         cash_TTM = balance_TTM['cashAndShortTermInvestments'][0]
 
         print("Total Debt: ", totalDebt_TTM)
-        print("Cash and ST Investments: ", cash_TTM) 
+        print("Cash and ST Investments: ", cash_TTM)
 
         work_table = pd.concat(
             (income_statement[['date', 'revenue', 'operatingIncome', 'netIncome', 'eps', 'ebitda',
@@ -211,25 +208,25 @@ for company in tickers[1:]:
         LTdis = 0.08
 
         company_profile_beta = company_profile['beta'].replace(np.nan, 0)
-        
+
         sector_company = work_table['sector']
-        
+
         Total_rating = []
 
-# ____________________________  РАСЧЕТ ПОКАЗАТЕЛЕЙ КАЧЕСТВА ___________________________________________________
-
+        # ____________________________  РАСЧЕТ ПОКАЗАТЕЛЕЙ КАЧЕСТВА ___________________________________________________
 
         # считаем рост выручки______________________________________________________________
 
         pr_revenue_growth = -work_table['revenue'][len(work_table['revenue']) - 1] + work_table['revenue'][0]
 
-        revenue_growth_DMITR = (pr_revenue_growth / abs(work_table['revenue'][len(work_table['revenue']) - 1]) * 100) / len(work_table['revenue'])
+        revenue_growth_DMITR = (pr_revenue_growth / abs(
+            work_table['revenue'][len(work_table['revenue']) - 1]) * 100) / len(work_table['revenue'])
 
         print(f'revenue_growth_DMITR {revenue_growth_DMITR}')
 
-        if revenue_growth >= 5:
+        if revenue_growth_DMITR >= 5:
             revenue_growth_rating = 1
-        elif 5 > revenue_growth > 2:
+        elif 5 > revenue_growth_DMITR > 2:
             revenue_growth_rating = 0
         else:
             revenue_growth_rating = -1
@@ -239,18 +236,19 @@ for company in tickers[1:]:
         # считаем Использование прибыли______________________________________________________________
         average_dividend_payout_percentage = np.mean(work_table['dividendYield'][0:])
 
+        SHAREHOLDERS_EQUITY = (work_table['totalAssets'] - work_table['totalLiabilities'])
 
-        pr_SHAREHOLDERS_EQUITY = - SHAREHOLDERS_EQUITY[len(work_table['totalAssets']) -1 ] + SHAREHOLDERS_EQUITY[0]
-        SHAREHOLDERS_EQUITY_growth_DMITR = (pr_SHAREHOLDERS_EQUITY / abs(SHAREHOLDERS_EQUITY[len(work_table['totalAssets']) -1 ]) * 100) / len(work_table['totalAssets'])
-
+        pr_SHAREHOLDERS_EQUITY = - SHAREHOLDERS_EQUITY[len(work_table['totalAssets']) - 1] + SHAREHOLDERS_EQUITY[0]
+        SHAREHOLDERS_EQUITY_growth_DMITR = (pr_SHAREHOLDERS_EQUITY / abs(
+            SHAREHOLDERS_EQUITY[len(work_table['totalAssets']) - 1]) * 100) / len(work_table['totalAssets'])
 
         use_of_profit_DMITR = round((average_dividend_payout_percentage + SHAREHOLDERS_EQUITY_growth_DMITR), 2)
 
         print(f'use_of_profit_DMITR {use_of_profit_DMITR}')
 
-        if use_of_profit < 4:
+        if use_of_profit_DMITR < 4:
             use_of_profit_rating = -2
-        elif 80 < use_of_profit > 4:
+        elif 80 < use_of_profit_DMITR > 4:
             use_of_profit_rating = 0
         else:
             use_of_profit_rating = 2
@@ -259,11 +257,11 @@ for company in tickers[1:]:
 
         # Считаем маржу Валовой прибыли_________________________________________________________________
 
-        GROSS_MAR = work_table['grossProfit']/work_table['revenue']
+        GROSS_MAR = work_table['grossProfit'] / work_table['revenue']
 
         gross_margin = round(np.mean(GROSS_MAR[0:]), 2) * 100
 
-        print('*'*50)
+        print('*' * 50)
         print(f'gross_margin {gross_margin}')
 
         gross_Margin_sector = pd.DataFrame(overview_Nasdaq[sector_company[0]]['Gross Margin'])
@@ -291,21 +289,18 @@ for company in tickers[1:]:
 
         Total_rating.append(gross_margin_dynamics_rating)
 
-        print(f'operating_margin_dynamics {gross_margin_dynamics}')    
-
+        print(f'operating_margin_dynamics {gross_margin_dynamics}')
 
         # Считаем Операционную маржу_________________________________________________________________
 
-        OPERATING_MAR = work_table['operatingIncome']/work_table['revenue']
+        OPERATING_MAR = work_table['operatingIncome'] / work_table['revenue']
 
         operating_margin = round(np.mean(OPERATING_MAR[0:]), 2) * 100
 
-        print(f'operating_margin {operating_margin}')                                                           
-
+        print(f'operating_margin {operating_margin}')
 
         gross_Margin_sector = pd.DataFrame(overview_Nasdaq[sector_company[0]]['Operating Margin'])
-        qattile_operating_Margin = gross_Margin_sector.describe()                                                                   
-
+        qattile_operating_Margin = gross_Margin_sector.describe()
 
         if operating_margin < qattile_operating_Margin.loc['25%'][0] * 100:
             operating_margin_rating = 1
@@ -333,14 +328,14 @@ for company in tickers[1:]:
 
         # Считаем Маржу чистой прибыли_________________________________________________________________
 
-        NET_PROFIT_MAR = work_table['netIncome']/work_table['revenue']
+        NET_PROFIT_MAR = work_table['netIncome'] / work_table['revenue']
 
         net_profit_margin = round(np.mean(NET_PROFIT_MAR[0:]), 2) * 100
 
         print(f'net_profit_margin {net_profit_margin}')
 
         net_Profit_Margin_sector = pd.DataFrame(overview_Nasdaq[sector_company[0]]['Net Profit Margin'])
-        qattile_net_Profit_Margin = net_Profit_Margin_sector.describe() 
+        qattile_net_Profit_Margin = net_Profit_Margin_sector.describe()
 
         if net_profit_margin < qattile_net_Profit_Margin.loc['25%'][0] * 100:
             net_profit_margin_rating = 1
@@ -353,7 +348,7 @@ for company in tickers[1:]:
 
         # Считаем Динамику маржи чистой прибыли_________________________________________________________________
 
-        if NET_PROFIT_MAR.std() < 0.1 :
+        if NET_PROFIT_MAR.std() < 0.1:
             net_profit_margin_dynamics = 'Рост'
             net_profit_margin_dynamics_rating = 1
         else:
@@ -363,19 +358,19 @@ for company in tickers[1:]:
         Total_rating.append(net_profit_margin_dynamics_rating)
 
         print(f'net_profit_margin_dynamics {net_profit_margin_dynamics}')
-        print('*'*50)
+        print('*' * 50)
 
         # Считаем Рост EPS_________________________________________________________________
 
         pr_EPS_growth = -work_table['eps'][len(work_table['eps']) - 1] + work_table['eps'][0]
-        EPS_growth_DMITR = (pr_EPS_growth / abs(work_table['eps'][len(work_table['eps']) - 1]) * 100) / len(work_table['eps'])
-
+        EPS_growth_DMITR = (pr_EPS_growth / abs(work_table['eps'][len(work_table['eps']) - 1]) * 100) / len(
+            work_table['eps'])
 
         print(f'EPS_growth_DMITR {EPS_growth_DMITR}')
 
-        if EPS_growth < 0.06:
+        if EPS_growth_DMITR < 0.06:
             EPS_growth_rating = -2
-        elif 0.1 > EPS_growth > 0.06:
+        elif 0.1 > EPS_growth_DMITR > 0.06:
             EPS_growth_rating = 0
         else:
             EPS_growth_rating = 2
@@ -384,7 +379,7 @@ for company in tickers[1:]:
 
         # Считаем Уровень долга_________________________________________________________________
 
-        debt_level = round(np.mean(work_table['totalLiabilities']/work_table['totalAssets']), 2)
+        debt_level = round(np.mean(work_table['totalLiabilities'] / work_table['totalAssets']), 2)
 
         print(f'debt_level {debt_level}')
 
@@ -397,7 +392,7 @@ for company in tickers[1:]:
 
         Total_rating.append(debt_level_rating)
 
-         # ___________________________________ ROE_DuPont _______________________________________________
+        # ___________________________________ ROE_DuPont _______________________________________________
 
         Profitability = []
         TechnicalEfficiency = []
@@ -408,16 +403,17 @@ for company in tickers[1:]:
             Profitability.append(work_table['netIncome'][year] / work_table['revenue'][year])
             TechnicalEfficiency.append(work_table['revenue'][year] / (
                     (work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2))
-            FinancialStructure.append(((work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2) /
-                                              ((work_table['totalStockholdersEquity'][year] +
-                                                balance['totalStockholdersEquity'].replace(np.nan, 0)[last_year]) / 2))
+            FinancialStructure.append(
+                ((work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2) /
+                ((work_table['totalStockholdersEquity'][year] +
+                  balance['totalStockholdersEquity'].replace(np.nan, 0)[last_year]) / 2))
 
         work_table['Profitability'] = Profitability
         work_table['TechnicalEfficiency'] = TechnicalEfficiency
         work_table['FinancialStructure'] = FinancialStructure
 
         work_table['ROE_DuPont'] = work_table['FinancialStructure'] * work_table['TechnicalEfficiency'] * \
-                                           work_table['Profitability']
+                                   work_table['Profitability']
 
         ROE_DuPont = round(work_table['ROE_DuPont'].mean(axis=0), 5)
         decomp = work_table[['date', 'Profitability', 'TechnicalEfficiency', 'FinancialStructure', 'ROE_DuPont']]
@@ -436,7 +432,7 @@ for company in tickers[1:]:
 
         # Считаем ROA_________________________________________________________________
 
-        ROA_average = round(np.mean(work_table['netIncome']/work_table['totalAssets']), 2)
+        ROA_average = round(np.mean(work_table['netIncome'] / work_table['totalAssets']), 2)
 
         print(f'ROA_average {ROA_average}')
 
@@ -453,24 +449,18 @@ for company in tickers[1:]:
 
         print(Total_rating)
         print(f'Общая оценка = {sum(Total_rating)}')
-        print('*'*50)
+        print('*' * 50)
         # print(f'''Среднее по сектору = {median_by_Industry[sector_company[0]]}''')
-        print('*'*50)
-
+        print('*' * 50)
 
         # print(f'''Квантили маржи Валовой прибыли {qattile_gross_Margin}''')
         # print(f'''Квантили Операционной маржи {qattile_operating_Margin}''')
         # print(f'''Квантили маржи чистой прибыли {qattile_net_Profit_Margin}''')
         # print(symbols_all)
 
-
-
-
-# ++++++++++++++++++++++++++++++++++  ОЦЕНИВАЕМ ИСТИННУЮ СТОИМОСТЬ  +++++++++++++++++++++++++++++++++++++++
+        # ++++++++++++++++++++++++++++++++++  ОЦЕНИВАЕМ ИСТИННУЮ СТОИМОСТЬ  +++++++++++++++++++++++++++++++++++++++
 
         print('Считаем инвестиционную стоимость по дивидендной модели Гордона')
-
-
 
         Dtoday = work_table['dividendsPaid'][0] / work_table['numberOfShares'][0]
 
@@ -514,7 +504,7 @@ for company in tickers[1:]:
 
         print('******** Расчет показателей качества **********')
 
-        # --------------------------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------------------------------------------
 
         # 'year_index' as the order of the year
         work_table['year_index'] = range(1, len(work_table) + 1)[::-1]
@@ -563,12 +553,11 @@ for company in tickers[1:]:
 
         print(freeCashFlow_pred_lr)
 
-
         # ________________________________________  Расчет WACC  _______________________________________________
 
         WACC = (work_table['mktCap'][0] / (work_table['mktCap'][0] + work_table['netDebt'][0:2].mean())) * ke + (
                 work_table['netDebt'][0:2].mean() / (work_table['mktCap'][0] + work_table['netDebt'][0:2].mean())) * (
-                        work_table['interestExpense'][0] / work_table['netDebt'][0:2].mean()) \
+                       work_table['interestExpense'][0] / work_table['netDebt'][0:2].mean()) \
                * (1 - (work_table['incomeTaxExpense'][0] / work_table['incomeBeforeTax'][0]))
 
         print(f'WACC {WACC}')
@@ -594,7 +583,7 @@ for company in tickers[1:]:
 
         print(f'Terminal_value_Discounted = {Terminal_value_Discounted}')
 
-        sum_num = npv + Terminal_value_Discounted + cash_TTM - totalDebt_TTM # добавлен кеш и вычесть долг за последний месяц
+        sum_num = npv + Terminal_value_Discounted + cash_TTM - totalDebt_TTM  # добавлен кеш и вычесть долг за последний месяц
         print(f'sum_num = {sum_num}')
 
         spl_num = sum_num / work_table['numberOfShares'][0]
@@ -671,28 +660,29 @@ for company in tickers[1:]:
         aapl_intrinsic_lr = dvd_total_lr + bvps_pred_lr
         print(f'aapl_intrinsic_lr: {aapl_intrinsic_lr}')
 
-        # ~~~~~~~~~~~~~~~~~~~~~  Оценка дисперсии модели линейной регресси дивов через R-Squared ~~~~~~~~~~~~~~~~~~~~~~~
+        # ~~~~~~~~~~~~~~~~~~  Оценка дисперсии модели линейной регресси дивов через R-Squared ~~~~~~~~~~~~~~~~~~~~~~~
 
         # # creating OLS regression
 
         r2_table = pd.DataFrame()
-        r2_table['y'] = work_table['Dividend per Share'][0:10].replace(np.nan, 0).replace('', 0, regex=True).astype(float)
+        r2_table['y'] = work_table['Dividend per Share'][0:10].replace(np.nan, 0).replace('', 0, regex=True).astype(
+            float)
         r2_table['x'] = work_table['year_index']
 
-
         slope, intercept, r_value, p_value, std_err = stats.linregress(r2_table['x'], r2_table['y'])
+
+
         def linefitline(b):
             return intercept + slope * b
 
+
         # line1 = linefitline(r2_table['x'])
         line1 = linefitline(r2_table['x'])
-
 
         # plot line
         # plt.scatter(r2_table['x'], r2_table['y'])
         # plt.plot(r2_table['x'], line1, c='g')
         # plt.show()
-
 
         line2 = np.full(10, [r2_table['y'].mean()])
         # plt.scatter(r2_table['x'], r2_table['y'])
@@ -704,25 +694,21 @@ for company in tickers[1:]:
         for k in differences_line1:
             line1sum = line1sum + (k * k)
 
-
         differences_line2 = line2 - r2_table['y']
         line2sum = 0
         for k in differences_line2:
             line2sum = line2sum + (k * k)
 
-
         r2 = r2_score(r2_table['y'], linefitline(r2_table['x']))
         print('The rsquared value is: ' + str(r2))
 
-        # ~~~~~~~~~~~~~~~~~~~~~  Оценка дисперсии модели линейной регресси FCF через R-Squared ~~~~~~~~~~~~~~~~~~~~~~~~~
+        # ~~~~~~~~~~~~~~~~~~~~  Оценка дисперсии модели линейной регресси FCF через R-Squared ~~~~~~~~~~~~~~~~~~~~~~~~~
 
         # # creating OLS regression
-
 
         r2_table_FCF = pd.DataFrame()
         r2_table_FCF['y'] = work_table['freeCashFlow'].replace(np.nan, 0).replace('', 0, regex=True)
         r2_table_FCF['x'] = work_table['year_index']
-
 
         slope, intercept, r_value, p_value, std_err = stats.linregress(r2_table_FCF['x'], r2_table_FCF['y'])
 
@@ -754,10 +740,9 @@ for company in tickers[1:]:
         for k in differences_line2:
             line2sum = line2sum + (k * k)
 
-
         r2_FCF = r2_score(r2_table_FCF['y'], linefitline(r2_table_FCF['x']))
 
-        #______________ Расчет стабильности выплат дивидендов ________________________
+        # ______________ Расчет стабильности выплат дивидендов ________________________
 
         div_YELD = work_table['dividendYield'][0]
 
@@ -778,7 +763,7 @@ for company in tickers[1:]:
 
         DSI = (div_year_pay + div_year_grow) / 14
 
-        #_______________________Пиотроски F-score______________________________________
+        # _______________________Пиотроски F-score______________________________________
 
         ROA_FS = (round(
             work_table['netIncome'][0] / ((work_table['totalAssets'][0] + work_table['totalAssets'][1]) / 2),
@@ -787,10 +772,12 @@ for company in tickers[1:]:
         ROA_D_FS = int((round(
             work_table['netIncome'][0] / ((work_table['totalAssets'][0] + work_table['totalAssets'][1]) / 2), 2)) >
                        (round(work_table['netIncome'][1] / (
-                                   (work_table['totalAssets'][1] + work_table['totalAssets'][2]) / 2), 2)))
-        CFO_ROA_FS = int((work_table['operatingCashFlow'][0] / work_table['totalAssets'][0]) > (work_table['netIncome'][0] /
-                                                                         ((work_table['totalAssets'][0] +
-                                                                           work_table['totalAssets'][1]) / 2)))
+                               (work_table['totalAssets'][1] + work_table['totalAssets'][2]) / 2), 2)))
+        CFO_ROA_FS = int(
+            (work_table['operatingCashFlow'][0] / work_table['totalAssets'][0]) > (work_table['netIncome'][0] /
+                                                                                   ((work_table['totalAssets'][0] +
+                                                                                     work_table['totalAssets'][
+                                                                                         1]) / 2)))
         CR_FS = int((work_table['totalAssets'][0] / work_table['totalLiabilities'][0]) >
                     (work_table['totalAssets'][1] / work_table['totalLiabilities'][1]))
         LTD_FS = int(work_table['longTermDebt'][0] <= work_table['longTermDebt'][1])
@@ -807,7 +794,6 @@ for company in tickers[1:]:
         print(f'DSI is {DSI}')
         print(f'f_score_table is {F_score}')
         print(f'Aggregate_score is {Aggregate_score}')
-
 
         # ~~~~~~~~~~~~~~~~~ ЗАПИСЬ В ТАБЛИЦУ ~~~~~~~~~~~~~~~~~
 
