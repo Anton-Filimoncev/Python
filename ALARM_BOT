@@ -53,10 +53,11 @@ scheduled_time = time(hour=12, minute=20, second=0)  # время отправк
 def echo_msg(message):
 	while j > 0:
 		i = 2
-
+		
+		data_masssage = str()
 		data_company = []
 		data_delta_day = []
-
+		
 		for company in check_data:
 
 
@@ -89,11 +90,14 @@ def echo_msg(message):
 		print(data_company )
 		print(data_delta_day)
 
-
+ 
 		for comp, delt in zip(data_company, data_delta_day):
 			sleep(0.2)
 			if delt > 5 or delt < -5:
-				bot.send_message(message.chat.id, f"Компания {comp} имеет отклонение {int(delt)}%")
+			    data_masssage += (f'Компания {comp} имеет отклонение {int(delt)}% \n')
+
+			
+		bot.send_message(message.chat.id, data_masssage)
 
 		if len(data_company) == 0:
 			bot.send_message(message.chat.id, "Компаний с отклонением более или менее 5% не обнаружено")
