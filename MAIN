@@ -65,6 +65,72 @@ for ticker in tickers[1:]:
 
 i = 2
 
+#_____________________________________________Считаем среднюю маржу по сектору __________________________________
+
+sectors = ['Technology', 'Consumer Cyclical', 'Industrials', 'Basic Materials', 'Communication Services',
+           'Consumer Defensive', 'Healthcare', 'Real Estate', 'Utilities', 'Financial Services', 'Services', 'Energy']
+
+exchange = 'NASDAQ'
+marketcapmorethan = '1000000000' 
+number_of_companies = 1 # количество компаний для среднего показателя по сектору по факту в два раза больше
+
+
+# symbols_all = []
+overview_Nasdaq = {}
+symbols_all = {}
+
+for sector in sectors:
+    gross_Margin_sector = []
+    operating_Margin_sector = []
+    net_Profit_Margin_sector = [] 
+#     symbols_NASDAQ = []
+#     symbols_NYSE = []
+    symbols = []
+    symbols_all[sector] = {}
+    overview_Nasdaq[sector] = {}
+    n = 0  
+    screener = requests.get(
+        f'https://financialmodelingprep.com/api/v3/stock-screener?{marketcapmorethan}=1000000000&volumeMoreThan=10000&sector={sector}&exchange={exchange}&limit={number_of_companies}&apikey={KEY}').json()
+    for item in screener:
+        symbols.append(item['symbol'])
+        
+    
+    screener_NY = requests.get(
+        f'https://financialmodelingprep.com/api/v3/stock-screener?{marketcapmorethan}=1000000000&volumeMoreThan=10000&sector={sector}&exchange=NYSE&limit={number_of_companies}&apikey={KEY}').json()
+    for item_NY in screener_NY:
+        symbols.append(item_NY['symbol'])
+        
+        
+    for company in symbols:
+    
+        gross_Margin_ten_year = []
+        operating_Margin_ten_year = []
+        net_Profit_Margin_ten_year = []
+        try:
+            n = n + 1
+            IS = requests.get(
+                f'https://financialmodelingprep.com/api/v3/income-statement/{company}?apikey={KEY}').json()
+
+            ### 3 compute margin ratios and append to list
+            for year_median in range(0, 10):
+                gross_Margin_ten_year.append(IS[year_median]['grossProfit'] / IS[year_median]['revenue'])
+                operating_Margin_ten_year.append(IS[year_median]['operatingIncome'] / IS[year_median]['revenue'])
+                net_Profit_Margin_ten_year.append(IS[year_median]['netIncome'] / IS[year_median]['revenue'])
+
+            gross_Margin_sector.append(np.mean(gross_Margin_ten_year) * 100)
+            operating_Margin_sector.append(np.mean(operating_Margin_ten_year) * 100)
+            net_Profit_Margin_sector.append(np.mean(net_Profit_Margin_ten_year) * 100)
+        except:
+            pass
+        
+#     print(gross_Margin_sector)
+    symbols_all[sector] = symbols    
+    overview_Nasdaq[sector]['Gross Margin'] = gross_Margin_sector
+    overview_Nasdaq[sector]['Operating Margin'] = operating_Margin_sector
+    overview_Nasdaq[sector]['Net Profit Margin'] = net_Profit_Margin_sector
+
+#_________________________________________   ОСНОВНОЙ ЦИКЛ, ПЕРЕБОР КОМПАНИЙ _________________________________________________________________
+
 for company in tickers[1:]:
     time.sleep(0.5)  # Задержка для гугл таблиц
     try:
@@ -150,15 +216,20 @@ for company in tickers[1:]:
         
         Total_rating = []
 
-        # считаем рост выручки_____________________________________________________________________
+# ____________________________  РАСЧЕТ ПОКАЗАТЕЛЕЙ КАЧЕСТВА ___________________________________________________
 
-        revenue_growth = round((((work_table['revenue'][0] / work_table['revenue'].last_valid_index()) ** 0.1) - 1), 2)
 
-        print(f'revenue_growth {revenue_growth}')
+        # считаем рост выручки______________________________________________________________
 
-        if revenue_growth > 0.06:
+        pr_revenue_growth = -work_table['revenue'][len(work_table['revenue']) - 1] + work_table['revenue'][0]
+
+        revenue_growth_DMITR = (pr_revenue_growth / abs(work_table['revenue'][len(work_table['revenue']) - 1]) * 100) / len(work_table['revenue'])
+
+        print(f'revenue_growth_DMITR {revenue_growth_DMITR}')
+
+        if revenue_growth >= 5:
             revenue_growth_rating = 1
-        elif 0.05 > revenue_growth > 0.02:
+        elif 5 > revenue_growth > 2:
             revenue_growth_rating = 0
         else:
             revenue_growth_rating = -1
@@ -168,92 +239,23 @@ for company in tickers[1:]:
         # считаем Использование прибыли______________________________________________________________
         average_dividend_payout_percentage = np.mean(work_table['dividendYield'][0:])
 
-        # average_percentage_of_buyback  # не найден   !!!!!!!!!!!!!!!!!!!!!!
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # !!!!!!!!!!!!!!!!!!!!!!!!
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        SHAREHOLDERS_EQUITY = (work_table['totalAssets'] - work_table['totalLiabilities'])
+        pr_SHAREHOLDERS_EQUITY = - SHAREHOLDERS_EQUITY[len(work_table['totalAssets']) -1 ] + SHAREHOLDERS_EQUITY[0]
+        SHAREHOLDERS_EQUITY_growth_DMITR = (pr_SHAREHOLDERS_EQUITY / abs(SHAREHOLDERS_EQUITY[len(work_table['totalAssets']) -1 ]) * 100) / len(work_table['totalAssets'])
 
-        average_quity_SHAREHOLDERS_EQUITY = round((((SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]) ** 0.1) - 1), 2)
 
-        use_of_profit = round((average_dividend_payout_percentage + average_quity_SHAREHOLDERS_EQUITY), 2)
+        use_of_profit_DMITR = round((average_dividend_payout_percentage + SHAREHOLDERS_EQUITY_growth_DMITR), 2)
 
-        print(f'use_of_profit {use_of_profit}')
+        print(f'use_of_profit_DMITR {use_of_profit_DMITR}')
 
-        if use_of_profit < 0.06:
+        if use_of_profit < 4:
             use_of_profit_rating = -2
-        elif 0.1 < use_of_profit > 0.06:
+        elif 80 < use_of_profit > 4:
             use_of_profit_rating = 0
         else:
             use_of_profit_rating = 2
 
         Total_rating.append(use_of_profit_rating)
-
-        #_____________________________________________Считаем среднюю маржу по сектору __________________________________
-
-        sectors = ['Technology', 'Consumer Cyclical', 'Industrials', 'Basic Materials', 'Communication Services',
-                   'Consumer Defensive', 'Healthcare', 'Real Estate', 'Utilities', 'Financial', 'Services']
-
-        exchange = 'NASDAQ'
-        marketcapmorethan = '1000000000' 
-        number_of_companies = 10 # количество компаний для среднего показателя по сектору
-        symbols = []
-        overview_Nasdaq = {}
-
-        ### 1 - request list of tickers for each industry
-        for sector in sectors:
-            symbols = []
-            gross_Margin_sector = []
-            operating_Margin_sector = []
-            net_Profit_Margin_sector = []
-            overview_Nasdaq[sector] = {}
-            n = 0  
-            screener = requests.get(
-                f'https://financialmodelingprep.com/api/v3/stock-screener?{marketcapmorethan}=1000000000&volumeMoreThan=10000&sector={sector}&exchange={exchange}&limit={number_of_companies}&apikey={KEY}').json()
-            for item in screener:
-                symbols.append(item['symbol'])
-
-            ### 2 extract Income Statement for each of the companies
-            for company in symbols:
-                gross_Margin_ten_year = []
-                operating_Margin_ten_year = []
-                net_Profit_Margin_ten_year = []
-                try:
-                    n = n + 1
-                    IS = requests.get(
-                        f'https://financialmodelingprep.com/api/v3/income-statement/{company}?apikey={KEY}').json()
-
-                    ### 3 compute margin ratios and append to list
-                    for year_median in range(0, 9):
-                        gross_Margin_ten_year.append(IS[year_median]['grossProfit'] / IS[year_median]['revenue'])
-                        operating_Margin_ten_year.append(IS[year_median]['operatingIncome'] / IS[year_median]['revenue'])
-                        net_Profit_Margin_ten_year.append(IS[year_median]['netIncome'] / IS[year_median]['revenue'])
-
-                    gross_Margin_sector.append(np.mean(gross_Margin_ten_year))
-                    operating_Margin_sector.append(np.mean(operating_Margin_ten_year))
-                    net_Profit_Margin_sector.append(np.mean(net_Profit_Margin_ten_year))
-
-                # NP to be able to calculate mean
-                except:
-                    pass
-            gross_Margin_sector = np.array(gross_Margin_sector)
-            gross_Margin_sector = np.median(gross_Margin_sector)
-
-            operating_Margin_sector = np.array(operating_Margin_sector)
-            operating_Margin_sector = np.median(operating_Margin_sector)
-
-            net_Profit_Margin_sector = np.array(net_Profit_Margin_sector)
-            net_Profit_Margin_sector = np.median(net_Profit_Margin_sector)
-
-            ### 4 - Add Ratios to a Dictionary and Convert to Pandas
-
-            overview_Nasdaq[sector]['Num. Companies'] = n
-            overview_Nasdaq[sector]['Gross Margin'] = gross_Margin_sector * 100
-            overview_Nasdaq[sector]['Operating Margin'] = operating_Margin_sector * 100
-            overview_Nasdaq[sector]['Net Profit Margin'] = net_Profit_Margin_sector * 100
-
-        median_by_Industry = pd.DataFrame.from_dict(overview_Nasdaq, orient='columns')
 
         # Считаем маржу Валовой прибыли_________________________________________________________________
 
@@ -261,14 +263,35 @@ for company in tickers[1:]:
 
         gross_margin = round(np.mean(GROSS_MAR[0:]), 2) * 100
 
+        print('*'*50)
         print(f'gross_margin {gross_margin}')
 
-        if gross_margin > overview_Nasdaq[sector_company[0]]['Gross Margin'] + 3:
-            gross_margin_rating = 1
-        elif gross_margin < overview_Nasdaq[sector_company[0]]['Gross Margin'] - 3:
-            gross_margin_rating = -1
+        gross_Margin_sector = pd.DataFrame(overview_Nasdaq[sector_company[0]]['Gross Margin'])
+        qattile_gross_Margin = gross_Margin_sector.describe()
 
-        Total_rating.append(gross_margin_rating)
+        if gross_margin <= qattile_gross_Margin.loc['25%'][0] * 100:
+            gross_margin_ratingz = 1
+
+        elif gross_margin >= qattile_gross_Margin.loc['75%'][0] * 100:
+            gross_margin_ratingz = -1
+
+        else:
+            gross_margin_ratingz = 0
+
+        Total_rating.append(gross_margin_ratingz)
+
+        # Считаем Динамику валовой маржи_________________________________________________________________
+
+        if GROSS_MAR.std() < 0.1:
+            gross_margin_dynamics = 'Рост'
+            gross_margin_dynamics_rating = 1
+        else:
+            gross_margin_dynamics = 'Падение'
+            gross_margin_dynamics_rating = -1
+
+        Total_rating.append(gross_margin_dynamics_rating)
+
+        print(f'operating_margin_dynamics {gross_margin_dynamics}')    
 
 
         # Считаем Операционную маржу_________________________________________________________________
@@ -277,12 +300,21 @@ for company in tickers[1:]:
 
         operating_margin = round(np.mean(OPERATING_MAR[0:]), 2) * 100
 
-        print(f'operating_margin {operating_margin}')
+        print(f'operating_margin {operating_margin}')                                                           
 
-        if operating_margin > overview_Nasdaq[sector_company[0]]['Operating Margin'] + 3:
+
+        gross_Margin_sector = pd.DataFrame(overview_Nasdaq[sector_company[0]]['Operating Margin'])
+        qattile_operating_Margin = gross_Margin_sector.describe()                                                                   
+
+
+        if operating_margin < qattile_operating_Margin.loc['25%'][0] * 100:
             operating_margin_rating = 1
-        elif operating_margin < overview_Nasdaq[sector_company[0]]['Operating Margin'] - 3:
+
+        elif operating_margin > qattile_operating_Margin.loc['75%'][0] * 100:
             operating_margin_rating = -1
+
+        else:
+            operating_margin_rating = 0
 
         Total_rating.append(operating_margin_rating)
 
@@ -290,10 +322,10 @@ for company in tickers[1:]:
 
         if OPERATING_MAR.std() < 0.1:
             operating_margin_dynamics = 'Рост'
-            operating_margin_dynamics_rating = 2
+            operating_margin_dynamics_rating = 1
         else:
             operating_margin_dynamics = 'Падение'
-            operating_margin_dynamics_rating = -2
+            operating_margin_dynamics_rating = -1
 
         Total_rating.append(operating_margin_dynamics_rating)
 
@@ -303,15 +335,19 @@ for company in tickers[1:]:
 
         NET_PROFIT_MAR = work_table['netIncome']/work_table['revenue']
 
-        net_profit_margin = round(np.mean(NET_PROFIT_MAR[0:]), 2)
+        net_profit_margin = round(np.mean(NET_PROFIT_MAR[0:]), 2) * 100
 
         print(f'net_profit_margin {net_profit_margin}')
 
+        net_Profit_Margin_sector = pd.DataFrame(overview_Nasdaq[sector_company[0]]['Net Profit Margin'])
+        qattile_net_Profit_Margin = net_Profit_Margin_sector.describe() 
 
-        if net_profit_margin > overview_Nasdaq[sector_company[0]]['Net Profit Margin'] + 3:
+        if net_profit_margin < qattile_net_Profit_Margin.loc['25%'][0] * 100:
             net_profit_margin_rating = 1
-        elif net_profit_margin < overview_Nasdaq[sector_company[0]]['Net Profit Margin'] - 3:
+        elif net_profit_margin > qattile_net_Profit_Margin.loc['75%'][0] * 100:
             net_profit_margin_rating = -1
+        else:
+            net_profit_margin_rating = 0
 
         Total_rating.append(net_profit_margin_rating)
 
@@ -327,16 +363,15 @@ for company in tickers[1:]:
         Total_rating.append(net_profit_margin_dynamics_rating)
 
         print(f'net_profit_margin_dynamics {net_profit_margin_dynamics}')
+        print('*'*50)
 
         # Считаем Рост EPS_________________________________________________________________
 
-        EPS_growth = round((((work_table['eps'][0]/work_table['eps'][9]) ** 0.1) -1), 2)   # Первый вариант, eps - берем из API
+        pr_EPS_growth = -work_table['eps'][len(work_table['eps']) - 1] + work_table['eps'][0]
+        EPS_growth_DMITR = (pr_EPS_growth / abs(work_table['eps'][len(work_table['eps']) - 1]) * 100) / len(work_table['eps'])
 
-        # EPS_growth = round((((SHAREHOLDERS_EQUITY[0] / SHAREHOLDERS_EQUITY[9]) ** 0.1) -1), 2)  # Второй вариант, eps = totalAssets - totalLiabilities
 
-        #  !!!!!!!!!!!!!!!!!При разных вариантах разные значения!!!!!!!!!!!!!!!!!!!!!!
-
-        print(f'EPS_growth {EPS_growth}')
+        print(f'EPS_growth_DMITR {EPS_growth_DMITR}')
 
         if EPS_growth < 0.06:
             EPS_growth_rating = -2
@@ -362,47 +397,46 @@ for company in tickers[1:]:
 
         Total_rating.append(debt_level_rating)
 
-        # ___________________________________ ROE_DuPont _______________________________________________
-        try:
-            Profitability = []
-            TechnicalEfficiency = []
-            FinancialStructure = []
+         # ___________________________________ ROE_DuPont _______________________________________________
 
-            for year in range(0, 10):
-                last_year = year + 1
-                Profitability.append(work_table['netIncome'][year] / work_table['revenue'][year])
-                TechnicalEfficiency.append(work_table['revenue'][year] / (
-                        (work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2))
-                FinancialStructure.append(((work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2) /
-                                          ((work_table['totalStockholdersEquity'][year] +
-                                            balance['totalStockholdersEquity'].replace(np.nan, 0)[last_year]) / 2))
+        Profitability = []
+        TechnicalEfficiency = []
+        FinancialStructure = []
 
-            work_table['Profitability'] = Profitability
-            work_table['TechnicalEfficiency'] = TechnicalEfficiency
-            work_table['FinancialStructure'] = FinancialStructure
+        for year in range(0, 10):
+            last_year = year + 1
+            Profitability.append(work_table['netIncome'][year] / work_table['revenue'][year])
+            TechnicalEfficiency.append(work_table['revenue'][year] / (
+                    (work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2))
+            FinancialStructure.append(((work_table['totalAssets'][year] + balance['totalAssets'].replace(np.nan, 0)[last_year]) / 2) /
+                                              ((work_table['totalStockholdersEquity'][year] +
+                                                balance['totalStockholdersEquity'].replace(np.nan, 0)[last_year]) / 2))
 
-            work_table['ROE_DuPont'] = work_table['FinancialStructure'] * work_table['TechnicalEfficiency'] * \
-                                       work_table['Profitability']
+        work_table['Profitability'] = Profitability
+        work_table['TechnicalEfficiency'] = TechnicalEfficiency
+        work_table['FinancialStructure'] = FinancialStructure
 
-            ROE_DuPont = round(work_table['ROE_DuPont'].mean(axis=0), 5)
+        work_table['ROE_DuPont'] = work_table['FinancialStructure'] * work_table['TechnicalEfficiency'] * \
+                                           work_table['Profitability']
 
-            print(f'ROE_DuPont_average {ROE_DuPont}')
+        ROE_DuPont = round(work_table['ROE_DuPont'].mean(axis=0), 5)
+        decomp = work_table[['date', 'Profitability', 'TechnicalEfficiency', 'FinancialStructure', 'ROE_DuPont']]
 
-            if ROE_DuPont < 0.08:
-                ROE_average_rating = -2
-            elif 0.14 > ROE_DuPont > 0.08:
-                ROE_average_rating = 0
-            else:
-                ROE_average_rating = 2
+        print(f'ROE_DuPont_average {ROE_DuPont}')
+        # print(decomp)
 
-            Total_rating.append(ROE_average_rating)
+        if ROE_DuPont < 0.08:
+            ROE_average_rating = -2
+        elif 0.14 > ROE_DuPont > 0.08:
+            ROE_average_rating = 0
+        else:
+            ROE_average_rating = 2
 
-        except KeyError:
-            ROE_DuPont = 0
+        Total_rating.append(ROE_average_rating)
 
         # Считаем ROA_________________________________________________________________
 
-        ROA_average = round(np.mean(work_table['netIncome'] / work_table['totalAssets']), 2)
+        ROA_average = round(np.mean(work_table['netIncome']/work_table['totalAssets']), 2)
 
         print(f'ROA_average {ROA_average}')
 
@@ -419,8 +453,20 @@ for company in tickers[1:]:
 
         print(Total_rating)
         print(f'Общая оценка = {sum(Total_rating)}')
+        print('*'*50)
+        # print(f'''Среднее по сектору = {median_by_Industry[sector_company[0]]}''')
+        print('*'*50)
 
-        # ++++++++++++++++++++++++++++++++++  Оцениваем истинную стоимость  +++++++++++++++++++++++++++++++++++++++
+
+        # print(f'''Квантили маржи Валовой прибыли {qattile_gross_Margin}''')
+        # print(f'''Квантили Операционной маржи {qattile_operating_Margin}''')
+        # print(f'''Квантили маржи чистой прибыли {qattile_net_Profit_Margin}''')
+        # print(symbols_all)
+
+
+
+
+# ++++++++++++++++++++++++++++++++++  ОЦЕНИВАЕМ ИСТИННУЮ СТОИМОСТЬ  +++++++++++++++++++++++++++++++++++++++
 
         print('Считаем инвестиционную стоимость по дивидендной модели Гордона')
 
