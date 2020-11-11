@@ -69,7 +69,7 @@ data_masssage = str()
 data_company = []
 data_delta_day = []
 
-for company in ticker_s[1050:1060]:
+for company in ticker_s:
     try:
         # sleep(2)
         stocks = data.DataReader(name=company, data_source="yahoo",
@@ -165,6 +165,26 @@ for sector in sectors:
     overview_Nasdaq[sector]['Net Profit Margin'] = net_Profit_Margin_sector
 
 # _________________________________________   ОСНОВНОЙ ЦИКЛ, ПЕРЕБОР КОМПАНИЙ _________________________________________
+
+# __________чистим таблицу________________
+for rows in range(2, 70):
+    sleep(0.5)
+    # if delta_day > 5 or delta_day < -5:
+    #     print(f"{company} = ALARM")
+    values = service.spreadsheets().values().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body={
+            "valueInputOption": "USER_ENTERED",
+            "data": [
+                {"range": f"ALARM_price!A{rows}:K{rows}",
+                 "majorDimension": "ROWS",
+                 "values": [
+                     [f"", f"", f"", f"", f"", f"", f"", f"", f"", f""],
+                 ]},
+            ]
+        }
+    ).execute()
+
 
 for company in data_company:
     time.sleep(0.5)  # Задержка для гугл таблиц
@@ -837,24 +857,7 @@ for company in data_company:
 
         # ~~~~~~~~~~~~~~~~~ ЗАПИСЬ В ТАБЛИЦУ ~~~~~~~~~~~~~~~~~
 
-        # __________чистим таблицу________________
-        for rows in range(2, 30):
-            sleep(0.2)
-            # if delta_day > 5 or delta_day < -5:
-            #     print(f"{company} = ALARM")
-            values = service.spreadsheets().values().batchUpdate(
-                spreadsheetId=spreadsheet_id,
-                body={
-                    "valueInputOption": "USER_ENTERED",
-                    "data": [
-                        {"range": f"ALARM_price!A{rows}:K{rows}",
-                         "majorDimension": "ROWS",
-                         "values": [
-                             [f"", f"", f"", f"", f"", f"", f"", f"", f"", f""],
-                         ]},
-                    ]
-                }
-            ).execute()
+
 
         values = service.spreadsheets().values().batchUpdate(
             spreadsheetId=spreadsheet_id,
@@ -878,17 +881,17 @@ for company in data_company:
 
 
     except KeyError:
-        sleep(1)
+        sleep(2)
         values = service.spreadsheets().values().batchUpdate(
             spreadsheetId=spreadsheet_id,
             body={
                 "valueInputOption": "USER_ENTERED",
                 "data": [
-                    {"range": f"ALARM_price!B{i}:H{i}",
+                    {"range": f"ALARM_price!A{i}:H{i}",
                      "majorDimension": "ROWS",
                      "values": [
                          [f"{company}", f"Ошибка тикера", f"Ошибка тикера", f"Ошибка тикера",
-                          f"Ошибка тикера", f"Ошибка тикера", f"Ошибка тикера"],
+                          f"Ошибка тикера", f"Ошибка тикера", f"Ошибка тикера", f"Ошибка тикера"],
                      ]},
                 ]
             }
